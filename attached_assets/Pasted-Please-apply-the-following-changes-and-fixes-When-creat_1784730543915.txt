@@ -1,0 +1,41 @@
+Please apply the following changes and fixes:
+
+- When creating advertisements, users must not enter a channel ID or channel URL. They should only be able to choose from the channels they already own. That's the purpose of the owned channels list.
+
+- Do not test or implement calls to the Eitaa authentication endpoints yet. The "Login with Eitaa" flow will use the Eitaa session and bot token, but the bot token has not been configured yet.
+
+- Do not treat a user as new simply because they are not currently logged in. Authentication state and onboarding state are different. A returning user with the same Eitaa account should be recognized as an existing user even if they are not logged in. A user is only "new" if they have never completed onboarding.
+
+- After a user's first successful login (username and Terms of Service are already completed), show a one-time popup asking:
+  
+  - Channel Owner
+  - Normal User
+  
+  If the user selects Channel Owner, open the existing Saved Styles Guide.
+  
+  If the user selects Normal User, open the guide with the Tools Guide tab already selected.
+
+- In the image editor, make the selected object's options panel draggable. It can be dragged using its existing header/object name area.
+
+- Compress advertisement images the same way as logo images so the final uploaded image is no larger than 500 KB. Use client-side compression before uploading. Add reasonable rate limits to all API endpoints.
+
+- Limit each user to:
+  
+  - Maximum 20 owned channels.
+  - Maximum 5 advertisements.
+
+- When exporting images, do not always use the same filename ("Eitashot.jpg"). Generate unique filenames using the Shamsi (Jalali) date, for example:
+  "Eitashot-1403-01-01.jpg".
+
+- In the Admin Panel, make the monthly donation target shown on the homepage configurable, just like the other editable values.
+
+- Also in the Admin Panel, allow management of the default advertisements shown when no paid advertisement is active.
+  
+  - Keep the current app promotion as one built-in default.
+  - Keep a donation advertisement as another built-in default.
+  - Allow creating additional default advertisements with custom text, image, and link.
+  - Admin-created defaults should become selectable alongside the built-in defaults.
+
+- Add an option in the Admin Panel to temporarily disable user advertisement submissions (maintenance mode). This should only disable user-created advertisements. Built-in/default advertisements (such as the app promotion or donation advertisement) should still be available.
+
+- In Settings, make the Add Logo button orange so it matches the styling of the other "Add" buttons such as Add Channel and Add Style.

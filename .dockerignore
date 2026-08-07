@@ -1,0 +1,33 @@
+# Ignore VCS
+.git
+.gitignore
+
+# Ignore local dev artifacts
+node_modules
+**/node_modules
+**/dist
+**/.cache
+**/coverage
+**/.turbo
+
+# Ignore Replit-specific files
+.replit
+replit.nix
+.config/
+.local/
+.upm/
+
+# Ignore editor/OS artifacts
+.DS_Store
+*.log
+*.swp
+.idea/
+.vscode/
+
+# Ignore the deploy folder itself (it's the build context root's neighbour)
+deploy/
+
+# Ignore test/ci artifacts
+**/*.test.ts
+**/*.spec.ts
+**/jest.config.*

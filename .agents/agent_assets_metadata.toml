@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "V2Trp_S6IbSuW-CdBIyrY"
+uri = "file://screenshots/eitashot-home.jpg"
+type = "image"
+title = "Eitashot Home"
+
+[[outputs]]
+id = "awau3_4jUaf84ArtMGaQx"
+uri = "file://screenshots/eitashot-advertise.jpg"
+type = "image"
+title = "Eitashot Advertise Page"

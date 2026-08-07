@@ -1,0 +1,79 @@
+Before implementing any non-trivial request, act as a planning agent.
+While planning, do not modify the application source code. You may only inspect and read project files to understand the codebase and produce a plan.
+Create a tasks/ folder in the project root if it doesn't already exist.
+For features or larger changes, create one or more Markdown task files in tasks/. Keep the number of tasks reasonable—prefer a few well-scoped tasks over many small ones. Do not create tasks for minor fixes or trivial changes.
+Use this format for every task:
+# Task: <Title> Description ## Plan 1. Analyse existing implementation 2. Make required changes 3. Test implementation 4. Verify behaviour ## Done - [ ] Feature implemented - [ ] Tests passing - [ ] Ready to apply ## Relevant Files - path/to/file1 - path/to/file2 - path/to/file3 --- ### Instructions for the Implementation Agent When this task is completed: 1. Delete this task file. 2. Continue with the remaining task that has the lowest numbered filename. 3. Repeat until no task files remain. 
+Present the task plan first and wait for approval before implementing, unless explicitly instructed to proceed immediately.
+the thing you should make tasks of:Please apply the following fixes and improvements:
+
+Image Editor / Studio Mode / Saved Styles Editor - Floating Object Options Panel
+
+The floating options panel that appears when selecting an object is still not movable.
+This applies to:
+
+Normal image editor.
+
+Studio mode editor.
+
+Saved Styles editor.
+
+Make the selected object's floating options panel draggable using its existing header/object name area. The user should be able to reposition the panel naturally instead of it being fixed in one location.
+
+Two-Finger Pinch Resize Behaviour
+
+The pinch resize interaction is still not working correctly.
+When resizing a text object with two fingers:
+
+The text size should update continuously in real time while the fingers move.
+
+The resize should not only apply after the gesture ends.
+
+The object should stay in its current position during the resize.
+
+The transition from one-finger dragging into two-finger pinch resizing should remain smooth.
+
+Please review the existing gesture handling and fix the real-time scaling behaviour.
+
+Image/Object Scaling During Resize
+
+There is another issue related to resizing objects.
+When the image/canvas is resized, objects added to the image can appear to disappear. For example, after resizing, a previously added logo seemed to be removed, but I later found that it was still there because the image dimensions became smaller and the object was likely moved outside the visible area.
+Please make sure that when resizing the image/canvas:
+
+Existing objects remain visible.
+
+Object positions are adjusted correctly.
+
+Objects are scaled or repositioned appropriately when needed.
+
+No objects appear to disappear simply because they are outside the new visible boundaries.
+
+Dark Mode Toolbar Issues
+
+Dark mode styling is incomplete.
+Current behaviour:
+
+Normal image editor toolbar correctly changes for dark mode.
+
+Studio mode toolbar still uses the light mode styling.
+
+Saved Styles editor toolbar still uses the light mode styling.
+
+Please update Studio mode and Saved Styles editor toolbars so they follow the same dark mode styling system as the normal editor.
+Check all editor-related UI components to ensure consistent dark mode support.
+
+Advertisement Maintenance Mode Behaviour
+
+Advertisement maintenance mode is not working correctly.
+I enabled advertisement maintenance mode, but users could still open the advertisement section.
+The intended behaviour is:
+When advertisement maintenance mode is enabled:
+
+Any user trying to open advertisements should see a maintenance page/message.
+
+The message should explain that advertisements are temporarily unavailable while we make sure advertisements can be displayed reliably without problems.
+
+Users should not be able to enter the advertisement creation/submission flow during maintenance.
+
+Please make sure maintenance mode actually blocks advertisement access while keeping the rest of the app working normally.

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <!-- Eitaa WebApp SDK — must be first; do NOT self-host -->
+    <script src="https://developer.eitaa.com/eitaa-web-app.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>ایتاشات - Eitashot</title>
+    <meta name="description" content="سریع‌ترین راه آماده‌سازی تصویر برای کانال‌ها" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="ایتاشات" />
+    <meta property="og:description" content="سریع‌ترین راه آماده‌سازی تصویر برای کانال‌ها" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ایتاشات" />
+    <meta name="twitter:description" content="سریع‌ترین راه آماده‌سازی تصویر برای کانال‌ها" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <!-- No-flash theme initialiser — runs before React mounts -->
+    <script>
+      try {
+        var t = localStorage.getItem('eitashot-theme');
+        if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch(e) {}
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

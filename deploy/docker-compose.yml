@@ -1,0 +1,126 @@
+version: "3.9"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Eitashot — Docker Compose Production Configuration
+#
+# Services:
+#   postgres    — PostgreSQL 16 database (data persisted in a named volume)
+#   db-migrate  — Runs once to apply database schema migrations, then exits
+#   api         — Express API server (Node.js)
+#   frontend    — React SPA served by nginx
+#   caddy       — Reverse proxy + automatic HTTPS (Let's Encrypt)
+#
+# Usage:
+#   docker compose --env-file .env up -d
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── PostgreSQL database ─────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # Persistent database storage — survives container updates and restarts
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Waits until PostgreSQL is ready to accept connections
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    # postgres is internal — NOT exposed to the host
+    networks:
+      - internal
+
+  # ── Database migrations ─────────────────────────────────────────────────────
+  db-migrate:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.migrate
+    restart: "no"  # run once and exit
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # ── API server ──────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      EITAA_BOT_TOKEN: ${EITAA_BOT_TOKEN}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      IDPAY_API_KEY: ${IDPAY_API_KEY}
+      APP_BASE_URL: ${APP_BASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      AD_WINDOW_PRICE_TOMANS: ${AD_WINDOW_PRICE_TOMANS:-50000}
+      RESERVATION_TIMEOUT_MINUTES: ${RESERVATION_TIMEOUT_MINUTES:-30}
+      MAX_EXPIRED_RESERVATIONS: ${MAX_EXPIRED_RESERVATIONS:-3}
+      DONATION_CYCLE_START: ${DONATION_CYCLE_START:-}
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
+  # ── Frontend ────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    restart: unless-stopped
+    networks:
+      - internal
+
+  # ── Caddy reverse proxy + automatic HTTPS ───────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"       # HTTP (redirected to HTTPS automatically by Caddy)
+      - "443:443"     # HTTPS
+      - "443:443/udp" # HTTP/3 (QUIC)
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Caddy stores TLS certificates here — must persist across restarts
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - internal
+
+# ── Named volumes (persistent storage) ────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+  caddy_logs:
+    driver: local
+
+# ── Internal network (services talk to each other; not exposed to the host) ───
+networks:
+  internal:
+    driver: bridge

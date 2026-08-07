@@ -1,0 +1,32 @@
+kind = "web"
+previewPath = "/"
+title = "Eitashot"
+version = "1.0.0"
+id = "artifacts/eitashot"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 8080
+autoStart = true
+
+[services.development]
+run = "pnpm --filter @workspace/eitashot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/eitashot", "run", "build" ]
+publicDir = "artifacts/eitashot/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "8080"
+BASE_PATH = "/"

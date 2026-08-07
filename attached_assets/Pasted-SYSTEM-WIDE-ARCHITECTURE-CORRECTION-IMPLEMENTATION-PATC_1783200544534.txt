@@ -1,0 +1,288 @@
+SYSTEM-WIDE ARCHITECTURE CORRECTION + IMPLEMENTATION PATCH
+
+Apply the following changes to align the application with the intended production architecture. Do not introduce alternative systems, parallel implementations, or duplicate flows.
+
+---
+
+1. AUTH / DEVELOPMENT SESSION MODEL (CRITICAL FOUNDATION)
+
+Replace any development authentication variability with a simulated Eitaa-compatible session provider.
+
+Requirements:
+
+- The app must always behave as if a valid authenticated Eitaa session exists during development.
+- The simulated session must match the structure and behavior of the real Eitaa SDK session exactly.
+- All user-scoped features must rely on this session:
+  - username
+  - settings
+  - saved styles
+  - saved logos
+- Do NOT introduce guest modes, bypasses, or conditional auth branches in the UI.
+
+Configuration:
+
+- Treat authentication-required mode as always enabled in development.
+- There must be no UI-based auth toggles.
+- Production migration is only a swap of session provider (simulated → real SDK).
+
+---
+
+2. HOMEPAGE FLOW (ENTRY SYSTEM)
+
+Replace homepage entry behavior:
+
+Buttons:
+
+- Left: Settings (square icon)
+- Middle: Select Image (main action)
+- Right: Guide ("?" button)
+
+After selecting image:
+
+Do NOT open editor immediately.
+
+Show a choice screen:
+
+- Edit Image → enters normal editor with selected image
+- Use Saved Styles → opens Saved Styles selection page
+
+---
+
+3. SAVED STYLES SYSTEM (CORE ARCHITECTURE)
+
+Definition (CRITICAL)
+
+A Saved Style is NOT an image.
+
+It is only:
+
+- serialized editor objects
+- tool properties
+- percentage-based positioning
+- layer order
+- references to persistent assets (e.g. "logo_id")
+
+It must NEVER contain:
+
+- JPG / PNG exports
+- binary image data
+- flattened canvas snapshots
+- uploaded temporary assets
+- the workspace image itself
+
+---
+
+Creation Flow
+
+- Must only be accessible from:
+  - Settings → Manage Saved Styles
+  - + Create New Saved Style (from Saved Styles list page)
+
+Editor Mode:
+
+- Must open on a blank canvas only
+- Blank canvas is a workspace only and is NEVER saved
+
+---
+
+Constraints:
+
+- Maximum 10 objects per Saved Style
+- Hard block adding the 11th object (no bypass)
+- Enforced in real-time during editing
+
+---
+
+Apply Flow:
+
+- Select Saved Style → apply to image
+- Reconstruct objects in normal editor
+- Continue editing normally afterward
+
+---
+
+Important:
+
+- No separate Saved Style editor system
+- Must reuse existing editor with restricted mode only
+
+---
+
+4. LOGO SYSTEM (CRITICAL FIX)
+
+Logo tool MUST be corrected
+
+Replace current single-button system with:
+
+In normal editor:
+
+- Add Logo → session-only, not saved
+- Save Logo → uploads to user account
+- Show saved logos list for reuse
+
+In Saved Style creation mode:
+
+- ONLY saved logos may be used
+- Add Logo (temporary) must be disabled
+- All logos must resolve to persistent "logo_id"
+
+---
+
+Logo rules:
+
+- Max 5 logos per user
+- Stored in persistent backend storage
+- Logos >500kB must be automatically compressed until under limit
+- Must preserve acceptable visual quality
+
+---
+
+5. SAVED STYLES + LOGO RELATION RULE
+
+Saved Styles must reference logos ONLY via:
+
+- "logo_id"
+
+Never embed:
+
+- image data
+- uploaded file content
+- binary blobs
+
+---
+
+6. GUIDE SYSTEM (UPDATED TRUTH SOURCE)
+
+Image Editor Section:
+
+- Must list ALL current tools as scrollable cards
+- Must exclude removed Library tool
+- Must reflect real tool behavior:
+  - crop, resize, flip, rotate
+  - text, paint, filters
+  - logo, watermark
+  - frames, layers, etc.
+- Each tool card includes:
+  - name
+  - visual representation
+  - explanation
+  - usage context
+
+Saved Styles Section:
+
+Must describe real workflow:
+
+1. Select image
+2. Choose Use Saved Styles
+3. Pick style OR create new
+4. Creation opens blank canvas restricted editor
+5. Saved Style stores only serialized instructions
+6. Applying style reconstructs objects in normal editor
+
+Include:
+
+- channel branding example (logo + watermark like @channel or eitaa.com/channel)
+- variation example (different placements, same identity)
+
+---
+
+7. RENDERING + STATE BUG FIX (CRITICAL)
+
+Fix unified layer and rendering pipeline issues:
+
+Problem A:
+
+Filters + paint cause:
+
+- paint color distortion
+- recursive filter re-application
+
+Fix:
+
+- Filters must be applied as a single compositing stage
+- Painting must NOT re-trigger filter pipeline
+- No cumulative filter stacking per stroke
+
+---
+
+Problem B:
+
+Inserted images become duplicated or desynced after painting
+
+Fix:
+
+- Each image must remain a single persistent layer instance
+- Paint tool must not clone or detach layers
+- Layer registry must remain source-of-truth
+- Undo confirms this is state mutation bug, not persistence bug
+
+---
+
+Hard constraints:
+
+- No flattening solution
+- No layer duplication workaround
+- Must preserve non-destructive editing model
+
+---
+
+8. FULL TOOL BATTLE TEST (MANDATORY)
+
+Before completion, validate system behavior under stress.
+
+Required tests:
+
+Layer integrity:
+
+- add/move/reorder multiple objects
+- ensure no duplication or ghost layers
+
+Filter + paint:
+
+- filter then paint
+- paint then filter
+- alternating usage
+
+Image insertion:
+
+- insert image + edit + paint
+- ensure single layer identity remains
+
+Undo/redo:
+
+- full multi-step operations
+- verify perfect restoration
+
+Multi-tool stress:
+
+- combine 5+ tools in one session
+- ensure no state corruption
+
+---
+
+Acceptance criteria:
+
+- No ghost layers
+- No duplicated images
+- No filter compounding artifacts
+- No broken undo/redo state
+- Stable layer identity across all operations
+
+---
+
+FINAL RULE
+
+Do NOT:
+
+- create alternative architectures
+- introduce duplicate systems
+- flatten image pipeline
+- store images inside Saved Styles
+- bypass session model with guest logic
+
+System must remain:
+
+- single editor
+- single layer model
+- single session model
+- single Saved Style schema

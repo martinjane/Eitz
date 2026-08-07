@@ -1,0 +1,51 @@
+Perform a final production readiness pass on the application before deployment. Preserve the existing architecture and functionality. Do not introduce unnecessary refactoring or new features unless explicitly requested below.
+
+Conduct a security review of the backend.
+
+Review every database query and ensure every query is parameterized or implemented safely through the ORM. Eliminate any possibility of SQL injection caused by user input.
+
+Review every backend endpoint and ensure authorization is always enforced on the server. Verify users cannot access or modify another user's data by changing request parameters.
+
+Verify every administrator endpoint checks that the authenticated username is exactly "dev_user" before granting access. Do not rely on frontend checks for administrator authorization.
+
+Review every file upload endpoint. Restrict uploads to expected image formats, enforce reasonable file size limits, validate uploaded content appropriately, and store uploaded files safely.
+
+Verify that the IDPay API key and every other secret remain server-side and are never exposed to frontend code.
+
+Validate all important user input on the backend in addition to any frontend validation.
+
+Implement rate limiting for endpoints that are vulnerable to abuse. Include authentication, payment creation, advertisement submission, channel ownership requests, advertisement reservation creation, donation requests, and other endpoints that accept frequent user interaction. Configure limits appropriate for normal users while reducing automated abuse.
+
+Review the payment workflow.
+
+Verify payment success is determined exclusively through backend verification with IDPay.
+
+Ensure duplicate verification requests cannot activate subscriptions or purchases multiple times.
+
+Ensure expired or abandoned payments correctly release advertisement reservations.
+
+Review the image editor.
+
+Painted strokes should not behave as selectable or movable objects like text, stickers, or layers. Once committed, painting should become part of the image while remaining fully compatible with the existing undo and redo implementation. Do not redesign or replace the current painting implementation because previous rendering bugs have already been resolved. Only ensure painted content is no longer selectable as an independent object.
+
+Integrate the application's general Terms of Service into the existing registration flow.
+
+When a visitor clicks the homepage login button and reaches the username selection popup for the first time, require acceptance of the application's Terms of Service before allowing the username to be submitted.
+
+Record that acceptance so it is associated with the user and is not requested again unless the Terms of Service are intentionally updated in a future version.
+
+The Terms of Service should be appropriate for an image editing web application that accepts payments through IDPay and should satisfy the application's legal requirements.
+
+Do not redesign or replace the existing authentication, login, session, or username systems.
+
+The application already contains a complete username system.
+
+A visitor must not be considered a registered user merely because they opened the login dialog or began the registration process.
+
+Registration is considered complete only after the submitted username has been successfully validated, stored by the backend, and associated with the user's account.
+
+If the username is never submitted or the backend fails to store it successfully, the visitor must continue to be treated as an unregistered user.
+
+Review the project for any remaining development configuration, debugging code, sandbox payment settings, mock data, development-only endpoints, or test configuration that should not exist in production.
+
+Preserve all existing functionality while making only the improvements described above.

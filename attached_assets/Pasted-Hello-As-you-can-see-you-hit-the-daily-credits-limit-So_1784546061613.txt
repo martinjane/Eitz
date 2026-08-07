@@ -1,0 +1,23 @@
+Hello!
+
+As you can see, you hit the daily credits limit! So your work didn't end, and I'm still logged in automatically with the user "dev_user", which was supposed to not happen once the app was production-ready.
+
+Okay, that was a good accident! It happened while you were getting the app ready for production, so I had a day to think about what we're missing.
+
+First, I found some problems.
+
+One of them is that our limit for submitting ads is 200 characters. But how much of that fits in a notification bar? Obviously not all of it! We need to make something for this. If the ad text is too long, the notification ad should show a button at the bottom that, when clicked, expands and shows all of the text. Do you understand what I mean?
+
+Also, consider that after someone clicks this button, the notification ad shouldn't disappear until they close it or click the button again to return the notification ad to its original size. Understand? Also, some ads may already be short enough and won't need an expand/collapse button. Do you understand what I'm talking about?
+
+Okay, now the other things!
+
+The up and down arrow buttons in the image editor, when you select an object, do something that users really couldn't guess, and I don't think they care about it much. The buttons currently change the object's layer order. Let's not have them in the options when an object is selected.
+
+Instead, replace the up and down buttons with + and −. They should increase and decrease the selected object's size.
+
+Also, add a Rotate button to the object options after an object is selected. I'm talking about the same options I've been talking about before—the popup that appears when you click a layer in the image editor. I want to add a Rotate button there.
+
+Each time it's clicked, it should rotate the selected object 30° clockwise (to the right). That means after 12 clicks, the object will have rotated 360° and will be back to its normal orientation.
+
+One more thing about layer ordering. I still want to keep the Layer Ordering feature in the image editor for users who want to arrange layers manually. However, I also want to add an automatic behavior. Whenever a user selects an object, that object should automatically become the topmost layer. If they then select another object, the newly selected object should become the topmost layer instead, and the previously selected object should move below it. In other words, the currently selected object should always be on top. This makes editing much easier because users won't have to wonder why another object is covering the one they're trying to move, resize, or rotate. They can still use the Layer Ordering feature afterward if they want to manually adjust the final layer arrangement.

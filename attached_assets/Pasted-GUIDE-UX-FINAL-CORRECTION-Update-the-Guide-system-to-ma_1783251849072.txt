@@ -1,0 +1,112 @@
+GUIDE UX FINAL CORRECTION
+
+Update the Guide system to match the intended product UX (not documentation style).
+
+1. Guide structure (must remain unchanged)
+
+Guide must only have two sections:
+
+- Image Editor
+- Saved Styles
+
+No additional sections, pages, or categories.
+
+---
+
+2. Image Editor Guide (CRITICAL UX RULE)
+
+This section must be interactive, not static text.
+
+Layout requirement:
+
+- Bottom area contains a horizontally scrollable row of square tool cards.
+- Each card must visually resemble the actual editor tool button.
+- Cards represent real tools exactly as they exist in the editor.
+
+Interaction rule:
+
+- Selecting a tool card updates a main content area above it.
+- The main area shows:
+  - what the tool does
+  - when to use it
+  - how to use it
+  - expected visual result
+
+Do NOT render all tool descriptions at once.
+Do NOT convert this into a static documentation page.
+
+This must behave like an in-app interactive learning system.
+
+---
+
+3. Saved Styles Guide (must remain workflow-based)
+
+This section must NOT use cards.
+
+It must remain a step-by-step flow explaining:
+
+- why Saved Styles exist
+- how they are created
+- how they are applied
+- that Saved Styles store only serialized editor data (not images)
+- that Saved Styles reconstruct objects in the editor when applied
+
+Required examples:
+
+Include real outcome-based branding examples:
+
+- consistent channel branding using logo + watermark (e.g. @channelname or eitaa.com/channel)
+- alternate layout example showing different logo/watermark positions while maintaining brand identity
+
+This section must focus on results, not feature description.
+
+---
+
+AUTH / LOGIN UI CLARIFICATION
+
+If a simulated Eitaa session is active in development:
+
+- The system should behave as fully authenticated.
+- HOWEVER: do NOT delete or remove the Login with Eitaa UI from the homepage.
+
+If the login button is hidden or inactive, it must only be because:
+
+- the user is already considered authenticated via simulated session
+
+It must NOT be removed from the codebase.
+
+Production readiness depends on being able to swap:
+simulated session → real Eitaa SDK session
+without UI changes.
+
+---
+
+EDITOR PERFORMANCE REQUIREMENT (REINFORCEMENT)
+
+The image editor must be optimized for smooth interaction.
+
+Focus especially on:
+
+- paint tool lag
+- brush stroke responsiveness
+- unnecessary re-renders during pointer movement
+- filter + paint interaction overhead
+- layer recalculation cost
+- canvas update frequency
+
+Rules:
+
+- Do NOT flatten the editor state
+- Do NOT remove non-destructive editing
+- Do NOT change feature behavior to “optimize performance”
+
+Goal is smooth real-time editing while preserving full feature set.
+
+---
+
+ACCEPTANCE CHECK
+
+- Guide is interactive, not static
+- Saved Styles remains step-based workflow
+- Login UI is not removed, only conditionally active
+- Editor remains non-destructive but significantly smoother during paint operations

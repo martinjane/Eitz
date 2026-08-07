@@ -1,0 +1,6 @@
+- [Eitashot architecture](eitashot-arch.md) — pan/zoom viewport, upload bug fix, studio tool badges, Eitaa login prototype
+- [API server port config](api-server-port-config.md) — dev sandbox shares one network namespace; artifacts must not share the same `localPort` in artifact.toml
+- [Eitashot DB migrations](eitashot-db-migrations.md) — DB tables must be pushed manually before first use; drizzle generate + push both required
+- [Eitashot paint layer fix](eitashot-paint-fix.md) — paint uses separate offscreen paintCanvasRef to prevent filter compounding
+- [Eitashot dev session](eitashot-dev-session.md) — simulated auth via GET /api/auth/dev-session; blocked in production by NODE_ENV check
+- [Eitashot IDPay + ads/donation](eitashot-idpay-ads.md) — donation progress bar, ad booking flow, IDPay integration, overlay timing, required env vars

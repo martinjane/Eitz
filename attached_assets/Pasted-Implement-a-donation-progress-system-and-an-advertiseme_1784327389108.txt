@@ -1,0 +1,123 @@
+Implement a donation progress system and an advertisement system while preserving the existing architecture, coding style, UI consistency, and project organization. Do not refactor unrelated code. Do not introduce unnecessary dependencies. Assume the official IDPay integration specification is provided separately and use it as the sole payment implementation reference.
+
+The homepage must contain a compact donation progress component positioned naturally within the interface. The component represents the monthly infrastructure funding goal required to operate the application.
+
+The monthly target amount is fixed at 298,000 Tomans. The backend stores the donation total for the current cycle. A cycle lasts exactly thirty days and automatically resets every thirty days beginning from a configurable application start date. The frontend never calculates donation totals and only renders values received from the backend.
+
+The component consists of a thin progress bar showing the donated amount, the target amount, and the completion percentage. Beside the progress bar place a subtle information button.
+
+Selecting the information button opens a small modal explaining the funding model in Persian using a transparent and friendly tone.
+
+Use wording equivalent to:
+
+«برای فعال ماندن این سرویس، هر ۳۰ روز حدود ۲۹۸ هزار تومان هزینه زیرساخت پرداخت می‌شود. این نوار میزان کمک‌های همین دوره را نشان می‌دهد. اگر این مبلغ تکمیل نشود، باقی هزینه توسط توسعه‌دهنده پرداخت می‌شود تا سرویس همچنان بدون محدودیت در دسترس بماند. اگر این پروژه برایتان مفید بوده، حتی کمک‌های کوچک نیز به تأمین هزینه‌های نگهداری کمک می‌کنند.»
+
+Do not imply that the application immediately shuts down if the goal is not reached.
+
+Place a new Advertisement button in the application header beside the light and dark mode toggle.
+
+Selecting this button opens a dedicated advertisement page.
+
+The advertisement system accepts advertisements exclusively for Eitaa channels. No other advertisement types are supported. Websites, businesses, products, Telegram channels, Instagram pages, applications, or other content types are not accepted.
+
+The page begins with a Persian explanation describing the advertisement service followed by the advertisement terms. The user must explicitly accept the terms before continuing.
+
+Rewrite the terms into concise, professional Persian appropriate for this application while preserving their intent. Remove references to unrelated organizations copied from the original text. Adapt the rules specifically for advertising Eitaa channels inside this application.
+
+The rules should clearly state that the advertiser is responsible for the advertised content, must possess the necessary rights to advertise the channel, must comply with the laws of the Islamic Republic of Iran, must provide accurate contact information when requested, understands that advertisements are subject to manual review, understands that approval is not guaranteed, understands that rejected advertisements are not published, and understands that violating the rules may result in advertisement removal. Remove clauses referring to newspapers, news agencies, unrelated publication timing guarantees, and unrelated contractual wording.
+
+After accepting the terms the advertiser submits an advertisement.
+
+The submission form contains the Eitaa channel link, channel display name, advertisement text, and advertisement image. The advertisement text must remain short enough to fit comfortably inside a notification style card.
+
+Display a live preview while editing.
+
+The preview must resemble a polished operating system notification containing a square image on the left, readable title and description on the right, and visually match the application's design language.
+
+The advertiser chooses a publication schedule.
+
+Only the next three calendar days are available for booking.
+
+Dates are displayed using the Solar Hijri calendar and Iran local time.
+
+Each day contains exactly four selectable publication windows:
+
+00:00–06:00
+
+06:00–12:00
+
+12:00–18:00
+
+18:00–24:00
+
+Unavailable windows cannot be selected.
+
+Multiple windows and multiple days may be purchased within a single order.
+
+When the advertiser proceeds toward payment, the backend must verify that every selected window is still available.
+
+If available, the backend creates temporary reservations before payment begins.
+
+Reservations expire automatically after a configurable timeout if payment is not successfully verified.
+
+Expired reservations immediately become available again.
+
+A user who repeatedly creates reservations without completing payment must be temporarily prevented from creating additional reservations.
+
+Do not permanently ban users.
+
+Instead, monitor unpaid reservation expirations over a rolling three-day period.
+
+If three reservations expire unpaid during that period, temporarily block new reservations until enough time has passed for the oldest expiration to leave the rolling window.
+
+The implementation should make this threshold configurable.
+
+The payment flow must use the supplied IDPay integration.
+
+Advertisement publication begins only after successful payment verification.
+
+Advertisement publication never occurs immediately after payment.
+
+Paid advertisements enter a pending review state awaiting manual approval.
+
+No administrator interface should be implemented at this stage.
+
+Only prepare the data model so manual approval functionality can be added later.
+
+The advertisement delivery system must be implemented.
+
+During an active publication window, application users see advertisements as temporary notification-style overlays.
+
+Every user follows an independent display timer.
+
+When the application starts, wait fifteen seconds before displaying the first advertisement.
+
+Display the advertisement for exactly five seconds.
+
+Hide it.
+
+Display the next advertisement every ninety seconds thereafter, each remaining visible for five seconds.
+
+This timing is completely client-side and independent for every application instance.
+
+Do not synchronize advertisement timing globally.
+
+If no paid advertisement exists for the current publication window, display the monthly donation progress component instead of an advertisement.
+
+The backend should remain intentionally lightweight.
+
+Do not periodically fetch information from Eitaa.
+
+Do not synchronize advertisement metadata with external services.
+
+Serve advertisements exclusively from locally stored data.
+
+The backend should expose only the minimal endpoints necessary for retrieving the currently active advertisement, donation progress, advertisement submission, reservation management, and payment integration.
+
+Do not implement Eitaa channel ownership verification at this stage.
+
+Design the data model so ownership verification can be integrated later without major architectural changes.
+
+Do not implement administrator accounts, moderation interfaces, pricing management, analytics, reporting, or future expansion features.
+
+Implement only the functionality explicitly described in this specification and nothing beyond it.

@@ -1,0 +1,273 @@
+Build a production-quality Telegram-style Mini App called Eitashot.
+
+Important: The application UI, labels, buttons, tooltips, dialogs, menus, onboarding text, error messages, and all user-facing content must be written in Persian (Farsi). The codebase, comments, internal structure, and documentation may be in English.
+
+Do not treat this as a generic image editor. Eitashot is a mobile-first image editing and content preparation tool designed primarily for messaging app users and content creators.
+
+Core Product Vision
+
+Eitashot is not trying to be Photoshop.
+
+Eitashot is not trying to be Canva.
+
+The goal is to provide the fastest possible workflow for preparing images for publishing in channels, groups, and social media.
+
+Performance, responsiveness, and mobile usability are higher priorities than feature quantity.
+
+---
+
+Design System
+
+Theme: Persian Sunset
+
+You are free to interpret the Persian Sunset theme professionally.
+
+Requirements:
+
+- Modern and clean UI
+- Mobile-first design
+- Premium feel
+- Lightweight appearance
+- Fast rendering
+- No glassmorphism
+- No heavy blur effects
+- No GPU-heavy visual effects
+- No excessive shadows
+- No visual elements that may reduce FPS on low or mid-range devices
+
+The interface should feel smooth and responsive inside a messaging-app WebView environment.
+
+---
+
+Architecture Philosophy
+
+Use Filerobot Image Editor only as the underlying image editing engine.
+
+The default Filerobot UI must NOT be exposed to users.
+
+Create a completely custom Eitashot interface.
+
+Users should experience Eitashot as a standalone product, not as a wrapper around Filerobot.
+
+---
+
+Performance Requirements
+
+Performance is a first-class feature.
+
+Optimize for:
+
+- Fast startup
+- Low memory usage
+- Mobile devices
+- Smooth dragging and resizing
+- Minimal unnecessary re-renders
+- Responsive interactions
+
+Avoid design or architectural decisions that may introduce lag.
+
+The application should feel fast even on average Android devices.
+
+---
+
+User Model
+
+For the current version:
+
+- No accounts
+- No login
+- No registration
+- No user profiles
+
+Every user is treated as a guest.
+
+Future account systems may be added later, but do not build the current experience around authentication.
+
+---
+
+Storage Philosophy
+
+Current version:
+
+- No cloud storage
+- No image history
+- No saved projects
+- No user galleries
+- No asset libraries
+- No persistent user files
+
+Workflow:
+
+1. User selects image
+2. User edits image
+3. User downloads result
+
+Everything should be temporary.
+
+Whenever possible, processing should happen client-side.
+
+---
+
+Homepage
+
+The homepage should be simple and focused.
+
+Primary action:
+
+- Select image
+
+At the bottom of the homepage provide two clearly visible sections:
+
+Quick Edit
+
+For regular users.
+
+Creator Studio
+
+For content creators and channel administrators.
+
+The user explicitly chooses which experience they want.
+
+Do NOT automatically detect the user type.
+
+---
+
+Quick Edit Mode
+
+Keep this mode simple.
+
+Include:
+
+- Crop
+- Resize
+- Rotate
+- Flip
+- Text
+- Draw
+- Filters
+- Brightness adjustment
+- Contrast adjustment
+- Saturation adjustment
+- Sticker/Image overlay upload
+- Export
+
+This mode should remain minimal and easy to use.
+
+---
+
+Creator Studio Mode
+
+Creator Studio is intended for content creators and channel owners.
+
+Include:
+
+- Everything available in Quick Edit
+- Logo placement
+- Watermark tools
+- Multiple image overlays
+- Multiple text elements
+- Multiple stickers
+- Multiple editable elements on the canvas
+- Shape elements if supported
+- Better content composition tools
+
+Focus on preparing content for publishing.
+
+---
+
+Canvas Experience
+
+The canvas should be the center of the experience.
+
+Mobile-first layout:
+
+- Header at top
+- Canvas occupying most of the screen
+- Editing controls optimized for touch
+- No desktop-style sidebars dominating the UI
+
+The design should feel native to mobile usage.
+
+---
+
+Layer Interaction
+
+Do not build a complex desktop-style layer panel.
+
+Instead:
+
+When a user selects an element:
+
+- Edit
+- Move
+- Resize
+- Rotate
+- Duplicate
+- Delete
+
+should be easily accessible through mobile-friendly controls.
+
+Prioritize usability over desktop software conventions.
+
+---
+
+Image Overlay / Sticker Behavior
+
+Users can upload their own:
+
+- PNG files
+- JPG files
+- Logos
+- Stickers
+- Icons
+
+directly from their device.
+
+Do not create a persistent asset library.
+
+Do not save uploaded assets between sessions.
+
+Assets only exist during the current editing session.
+
+---
+
+Watermark Tools
+
+Provide a strong watermark workflow.
+
+Users should be able to:
+
+- Add logo watermarks
+- Add text watermarks
+- Adjust opacity
+- Adjust size
+- Position elements easily
+
+This is a key use case for channel owners.
+
+---
+
+Export
+
+Users must be able to export and download their final image.
+
+Keep exporting simple and fast.
+
+No cloud storage workflow is required.
+
+---
+
+Product Priorities (Highest to Lowest)
+
+1. Performance
+2. Mobile usability
+3. Simplicity
+4. Clean Persian UI
+5. Content creator workflow
+6. Feature completeness
+
+If a decision must be made between more features and better performance, prioritize performance.
+
+If a decision must be made between visual effects and responsiveness, prioritize responsiveness.
+
+The final result should feel like a polished, modern, mobile-first Persian image editing mini app called Eitashot, built for real-world daily use inside messaging platforms.

@@ -1,0 +1,29 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Caddy reverse-proxy configuration
+#
+# Caddy automatically obtains and renews a free TLS certificate from Let's
+# Encrypt for your domain. No manual certificate management is required.
+#
+# Replace "yourdomain.com" in .env with your actual domain name.
+# The DOMAIN variable is injected by docker-compose from the .env file.
+# ──────────────────────────────────────────────────────────────────────────────
+
+{$DOMAIN:localhost} {
+    # Route all API requests to the backend container
+    reverse_proxy /api/* api:3001 {
+        # Pass the real client IP to the API for rate limiting
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Real-IP {remote_host}
+    }
+
+    # Route everything else to the frontend container
+    reverse_proxy * frontend:80
+
+    # Enable access logging
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 10MB
+            roll_keep 5
+        }
+    }
+}

@@ -1,0 +1,54 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Eitashot — API Server
+# Build context: root of the monorepo (one level above this file)
+# Usage: docker build -f deploy/Dockerfile.api -t eitashot-api .
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Stage 1 — Builder: install all deps and compile TypeScript → ESM bundle
+FROM --platform=linux/amd64 node:22-slim AS builder
+
+# Install pnpm via Corepack (matches the version used in development)
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+
+WORKDIR /workspace
+
+# Copy workspace manifests first (maximises layer cache reuse)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
+# Copy every workspace package that the API depends on
+COPY lib/ lib/
+COPY artifacts/api-server/ artifacts/api-server/
+
+# Install all dependencies (devDeps needed for esbuild compilation)
+RUN pnpm install --frozen-lockfile
+
+# Compile the API to a single ESM bundle in artifacts/api-server/dist/
+RUN pnpm --filter @workspace/api-server run build
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 2 — Runtime: minimal production image
+# ──────────────────────────────────────────────────────────────────────────────
+FROM --platform=linux/amd64 node:22-slim AS runtime
+
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+
+WORKDIR /workspace
+
+# Copy workspace manifests
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY lib/ lib/
+COPY artifacts/api-server/ artifacts/api-server/
+
+# Install production-only dependencies (skips devDeps)
+ENV NODE_ENV=production
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy the compiled bundle from the builder stage
+COPY --from=builder /workspace/artifacts/api-server/dist ./artifacts/api-server/dist
+
+# The server reads PORT from the environment; default 3001
+ENV PORT=3001
+EXPOSE 3001
+
+CMD ["node", "--enable-source-maps", "./artifacts/api-server/dist/index.mjs"]

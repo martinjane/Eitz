@@ -1,0 +1,87 @@
+Before implementing any non-trivial request, act as a planning agent.
+While planning, do not modify the application source code. You may only inspect and read project files to understand the codebase and produce a plan.
+Create a tasks/ folder in the project root if it doesn't already exist.
+For features or larger changes, create one or more Markdown task files in tasks/. Keep the number of tasks reasonable—prefer a few well-scoped tasks over many small ones. Do not create tasks for minor fixes or trivial changes.
+Use this format for every task:
+# Task: <Title> Description ## Plan 1. Analyse existing implementation 2. Make required changes 3. Test implementation 4. Verify behaviour ## Done - [ ] Feature implemented - [ ] Tests passing - [ ] Ready to apply ## Relevant Files - path/to/file1 - path/to/file2 - path/to/file3 --- ### Instructions for the Implementation Agent When this task is completed: 1. Delete this task file. 2. Continue with the remaining task that has the lowest numbered filename. 3. Repeat until no task files remain. 
+Present the task plan first and wait for approval before implementing, unless explicitly instructed to proceed immediately.
+the things you are going to make their tasks:
+CRITICAL:
+ 
+I tried creating an advertisement as a normal user from Settings. I entered the advertisement text, selected the channel, and when I reached the image selection/upload step, the loading circle appeared and never stopped. I waited for a long time and the upload never completed.
+ 
+I do not think this is caused by incorrect endpoints because I tested uploading the exact same image as a logo, and the logo upload worked successfully. Please investigate the advertisement image upload flow specifically. Check the frontend upload handling, client-side processing/compression, API request flow, backend handling, and any state updates that could cause the UI to remain stuck in a loading state forever. Fix the root cause and make sure failed uploads also show a proper error instead of infinite loading.
+ 
+NON-CRITICAL:
+ 
+ 
+1. Default Advertisements Active Selection
+ 
+
+ 
+In the Admin Panel, the default advertisements should exist as selectable options. Since the app only displays one active advertisement at a time slot, I need a way to choose which advertisement is currently active.
+ 
+Allow the admin to select which advertisement is the currently active default advertisement. This should include:
+ 
+ 
+- Built-in app promotion advertisement.
+ 
+- Built-in donation advertisement.
+ 
+- Admin-created default advertisements.
+ 
+
+ 
+The selected advertisement should be the one displayed when no paid user advertisement is active.
+ 
+ 
+1. Channel Ownership Limit
+ 
+
+ 
+Change the maximum number of owned channels a user can claim from 20 to 10.
+ 
+ 
+1. Admin Removal Controls
+ 
+
+ 
+In the Admin Panel:
+ 
+ 
+- In the Channels section, allow admins to remove already verified owned channels.
+ 
+- In the Advertisements section, allow admins to remove already verified advertisements.
+ 
+
+ 
+This should work for approved/verified items, not only pending requests.
+ 
+ 
+1. Advertisement Notification Text
+ 
+
+ 
+The advertisement notification text is currently selectable. This should be fixed.
+ 
+Make advertisement notification text unselectable, similar to other non-interactive UI text areas where text selection is not intended.
+ 
+ 
+1. Advertisement Maintenance Mode Behaviour
+ 
+
+ 
+When advertisement submissions are disabled through maintenance mode, users currently see a maintenance page when entering advertisements.
+ 
+Review this behaviour carefully. The purpose of maintenance mode is to safely disable user advertisement submissions while ensuring existing/default advertisements can still function.
+ 
+Make sure that:
+ 
+ 
+- Existing active advertisements can still be displayed without failure.
+ 
+- Built-in/default advertisements remain available.
+ 
+- The app does not break when an advertisement purchase needs to display an advertisement while user submissions are disabled.
+ 
+- Maintenance mode only blocks the parts that are intended to be disabled.

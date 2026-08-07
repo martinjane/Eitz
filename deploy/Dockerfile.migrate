@@ -1,0 +1,22 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Eitashot — Database Migration Runner
+# Runs `drizzle-kit push` once to bring the PostgreSQL schema up to date.
+# This container exits immediately after the migration completes.
+# Build context: root of the monorepo (one level above this file)
+# ──────────────────────────────────────────────────────────────────────────────
+
+FROM --platform=linux/amd64 node:22-slim AS migrate
+
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+
+WORKDIR /workspace
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY lib/ lib/
+COPY artifacts/api-server/ artifacts/api-server/
+
+# devDependencies are required here because drizzle-kit is a devDep
+RUN pnpm install --frozen-lockfile
+
+# The DATABASE_URL environment variable must be set at runtime
+CMD ["pnpm", "--filter", "@workspace/db", "run", "push"]

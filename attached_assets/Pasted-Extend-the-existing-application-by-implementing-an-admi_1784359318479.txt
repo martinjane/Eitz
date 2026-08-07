@@ -1,0 +1,79 @@
+Extend the existing application by implementing an administrator panel together with a complete channel verification and advertisement management workflow. Preserve the current architecture, coding style, project organization, authentication system, and UI design. Do not refactor unrelated code. Do not introduce unnecessary dependencies. This specification extends the previously implemented donation and advertisement system.
+
+The application already has user accounts, authentication, sessions, usernames, and a settings page. Reuse the existing systems. Never ask users to enter their application username because it already exists in the backend and is associated with their authenticated account.
+
+Administrator access is intentionally simple for this first version. The authenticated user whose username is exactly "dev_user" is the administrator. No administrator database, permission management, or role system should be implemented. Every administrator API endpoint must enforce authorization on the backend. Frontend checks alone are never sufficient. Non-administrator users must never receive administrator data or gain access to administrator endpoints. Do not load or expose administrator interface assets, routes, or functionality to normal users whenever practical.
+
+Add a new "Owned Channels" section to the existing Settings page.
+
+Users may submit ownership requests for Eitaa channels.
+
+The submission form accepts only the channel username following the fixed prefix "https://eitaa.com/". The prefix is displayed but not editable so users only enter the remaining channel identifier.
+
+Before submission the user must accept channel ownership terms stating that they are the legitimate owner or administrator of the submitted channel and understand that false ownership claims may result in rejection.
+
+Once accepted, the application generates a unique verification code.
+
+The user is instructed to publish this exact verification code in the submitted Eitaa channel.
+
+When the user submits the request, create a pending verification request containing the authenticated application username, the submitted channel link, the generated verification code, the submission timestamp, and a pending status.
+
+Do not ask the user for information that already exists in the application account.
+
+Before creating a request, verify that the submitted channel has not already been claimed by another account. A single Eitaa channel may belong to only one application account. If the channel already exists in either pending or approved state, reject the submission immediately without creating another verification request.
+
+The administrator panel contains a Channel Verification section listing every pending request. Each request displays the application username, channel link, verification code, submission time, and current status. The administrator manually checks whether the verification code was published in the specified Eitaa channel and then either approves or rejects the request.
+
+After approval the channel becomes permanently associated with that user account until future management functionality is implemented.
+
+Advertisements must be redesigned around reusable advertisement records.
+
+A user first creates an advertisement and submits it for review.
+
+An advertisement contains an approved owned channel, advertisement image, advertisement title, and short advertisement text suitable for the application's notification-style display.
+
+Users may only create advertisements using channels that have already been verified and approved.
+
+Each advertisement has one of the following states: Draft, Pending Review, Approved, or Rejected.
+
+The administrator panel contains an Advertisement Review section displaying all advertisements awaiting moderation. The administrator can approve or reject advertisements.
+
+Approved advertisements become reusable. The user does not need another content review every time they purchase publication windows.
+
+If an approved advertisement is modified in any way, including image, title, text, or associated verified channel, it automatically returns to the Pending Review state and requires manual approval again.
+
+The advertisement page should become the central location for advertisement management.
+
+Display the user's advertisements together with their current approval status and publication history.
+
+Each advertisement should display previous, current, and future publication campaigns including their scheduled dates, selected publication windows, and current campaign status.
+
+Do not create a separate page for advertisement history.
+
+Advertisement booking continues to use the previously implemented scheduling system where users purchase publication windows only for already approved advertisements.
+
+The advertisement terms should only be presented once.
+
+When a user accepts the advertisement terms for the first time, persist this acceptance using the existing user account or session system.
+
+Do not request acceptance again for subsequent advertisement operations unless the terms themselves are intentionally changed in a future application version.
+
+Extend the administrator panel with a Pricing section.
+
+All monetary values used by the application must be configurable without code changes.
+
+The administrator can configure the predefined donation buttons shown to users.
+
+The administrator can configure the price of every advertisement publication window independently.
+
+Each of the four daily publication windows must support its own configurable price.
+
+The pricing configuration must be read dynamically by the application instead of being hardcoded.
+
+The administrator panel should remain intentionally focused.
+
+Implement only channel verification, advertisement moderation, and pricing management.
+
+Do not implement bug reports, analytics, reporting, dashboards, user management, permission systems, administrator management, statistics, or future expansion features.
+
+The implementation should reuse the existing authentication system, session handling, settings page, advertisement infrastructure, and IDPay integration without unnecessary architectural changes.

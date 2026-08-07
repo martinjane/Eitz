@@ -1,0 +1,43 @@
+Before creating the implementation plan, inspect the current codebase. The two prompts below were both previously run with Replit Agent, but both runs stopped because the quota was exhausted before they completed. As a result, some requested changes may already be fully implemented, some may be partially implemented, and others may not have been started. First, determine the current implementation status of everything requested in both prompts. Then create tasks only for the remaining or incomplete work, identifying any gaps that still need to be filled. Do not recreate or duplicate features that are already complete—use the current state of the project as the source of truth when generating the task list.
+
+Also, review every place in the application where users interact with the backend. There are relatively few backend interaction points in this app, so each one should be inspected carefully. As part of the plan, identify any missing validation, error handling, or safeguards that could allow a user to unintentionally or intentionally cause backend errors or crashes. Include tasks to address any such issues you find so the backend interaction points are robust and resilient. The first sent prompt:I have a few more changes. First, make all text in the Guide page unselectable, just like the text on the Home page. Also, I want advertisements to be handled similarly to owned channels. Advertisements should be created and verified beforehand, just like owned channels, and they should have their own section in Settings. Make the part where users upload an advertisement image and write the advertisement text accessible from Settings under an Add Advertisement section. Advertisements should still go through the same verification process they currently have. I only want to change when they are created, not how they are verified. Just like before, when creating an advertisement, the user should still select the channel the advertisement belongs to. Then, instead of having users upload the image and write the text every time they go through the advertisement flow, the advertisement pages should simply let users select one of their previously created advertisements, then choose the date and time slot for it. The idea is to separate advertisement creation from advertisement scheduling, just like owned channels are managed separately from where they are used. Also, in Settings, add an option that lets users cancel any pending verification requests for both advertisement verification and channel ownership claims. Finally, I want users to be able to make specific parts of their advertisement text bold while writing it. Add support for this in the advertisement text editor, and place a small note near the text input explaining how to use the bold formatting. Also, improve the pinch-to-resize behavior for text objects in the image editor. If the user is dragging a text object with one finger and then places a second finger on the screen without lifting the first one, the interaction should smoothly transition into pinch-to-resize. The text should resize continuously in real time while staying at its current position. It should not snap back to the position where it was first touched before the pinch began. The transition between dragging and pinching should feel smooth and natural. If any other part of the app follows a different or less smooth pinch-to-resize behavior, update it to match this same interaction so resizing feels consistent throughout the app. The second sent prompt: Please apply the following changes and fixes:
+
+When creating advertisements, users must not
+
+enter a channel ID or channel URL. They should only be able to choose from the channels they already own. That's the purpose of the owned channels list. 
+
+Do not test or implement calls to the Eitaa authentication endpoints yet. The "Login with Eitaa" flow will use the Eitaa session and bot token, but the bot token has not been configured yet.
+
+Do not treat a user as new simply because they are not currently logged in. Authentication state and onboarding state are different. A returning user with the same Eitaa account should be recognized as an existing user even if they are not logged in. A user is only "new" if they have never completed onboarding.
+
+After a user's first successful login (username and Terms of Service are already completed), show a one-time
+
+popup asking: Channel Owner Normal User 
+
+If the user selects Channel Owner, open the existing Saved Styles Guide.
+
+If the user selects Normal User, open the guide with the Tools Guide tab already selected.
+
+In the image editor, make the selected object's options panel draggable. It can be dragged using its existing header/object name area.
+
+Compress advertisement images the same way as logo images so the final uploaded image is no larger than 500 KB
+
+. Use client-side compression before uploading. Add reasonable rate limits to all API endpoints. 
+
+Limit each user to:
+
+Maximum 20 owned channels. Maximum 5 advertisements. 
+
+When exporting images, do not always use the same filename (Eitashot.jpg). Generate unique filenames using the Shamsi (Jalali) date, for example: Eitashot-1403-01-01.jpg.
+
+In the Admin Panel, make the monthly donation target shown on the homepage configurable, just like the other editable values.
+
+Also in the Admin Panel, allow management of the default advertisements shown when no paid advertisement is active.
+
+Keep the current app promotion as one built-in default. Keep a donation advertisement as another built-in default. Allow creating additional default advertisements with custom text, image, and link. Admin-created defaults should become selectable alongside the built-in defaults. 
+
+Add an option in the Admin Panel to temporarily disable user advertisement submissions (maintenance mode). This should only disable user-created advertisements. Built-in/default advertisements (such as the app promotion or donation advertisement) should still be available.
+
+In Settings, make the Add Logo
+
+button orange so it matches the styling of the other "Add" buttons such as Add Channel and Add Style. 

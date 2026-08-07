@@ -1,0 +1,108 @@
+Please apply the following fixes and improvements:
+
+Donation Default Advertisement Improvements
+
+The donation default advertisement needs several improvements:
+
+The donation advertisement icon is incorrect. Replace it with a heart icon.
+
+The green color currently used does not match the app theme. Update it so it follows the application's theme styling.
+
+The donation advertisement text is too short.
+
+Improve the donation advertisement content structure:
+
+Show a short, suitable first message that fits naturally in the advertisement card.
+
+Allow users to expand it to see a longer explanation about why donations are needed and what they support.
+
+Keep the design clean and avoid making the advertisement overwhelming.
+
+Donation Advertisement Notification Behaviour
+
+Clicking the donation advertisement notification currently does nothing.
+Fix this so:
+
+Clicking the donation advertisement notification takes the user to the donation page.
+
+Also, add protection against accidental loss of user work:
+If the user clicks a built-in/default advertisement notification while they are working in the app (for example, editing an image before saving), do not immediately redirect them.
+Instead, for built-in/default advertisements only:
+
+Show a confirmation dialog before leaving the current page.
+
+The dialog should ask whether the user wants to continue to the advertisement destination or stay on the current page.
+
+Important:
+
+This confirmation should only apply to built-in/default advertisements managed by the app.
+
+Do not apply this confirmation to user-submitted advertisements.
+
+Be careful with the wording so it does not discourage users from opening advertisements when they genuinely want to. The purpose is only to prevent accidental loss of work.
+
+Floating Object Options Panel Movement
+
+The floating options panel after selecting an object is still not movable.
+This issue exists in all three editors:
+
+Normal image editor.
+
+Studio editor.
+
+Saved Styles editor.
+
+Make the selected object's floating options panel draggable using its existing header/object name area.
+Verify the behaviour works consistently in all three locations.
+
+Dark Mode Toolbar Consistency
+
+Dark mode support is still incomplete.
+Current state:
+
+Normal image editor toolbar correctly changes in dark mode.
+
+Studio editor toolbar still looks like light mode.
+
+Saved Styles editor toolbar still looks like light mode.
+
+Please use the normal image editor toolbar's dark mode appearance as the reference and apply the same styling approach to:
+
+Studio editor toolbar.
+
+Saved Styles editor toolbar.
+
+Make sure all editor toolbars properly follow the active theme.
+
+Bug Reporting and Feedback System
+
+Add a simple bug reporting and feedback feature.
+Requirements:
+
+Add a small visible section on the Home page where users can submit feedback or bug reports.
+
+Users can write up to 200 characters.
+
+No user identity needs to be stored with the report.
+
+Keep the system simple.
+
+Rate limiting:
+
+Each user can submit only one bug report or feedback message every 5 days.
+
+Do not add unnecessary features. This should remain a simple reporting system with minimal complexity and minimal maintenance overhead.
+
+Advertisement Notification Text Selection
+
+Advertisement notification texts are still selectable.
+Fix this so notification text for advertisements cannot be selected.
+Check all advertisement notification types:
+
+Default advertisement notifications.
+
+Donation advertisement notification.
+
+Other built-in advertisement notifications.
+
+Make sure none of them allow unwanted text selection.

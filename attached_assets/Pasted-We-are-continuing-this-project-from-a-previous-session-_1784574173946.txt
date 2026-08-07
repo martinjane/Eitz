@@ -1,0 +1,39 @@
+We are continuing this project from a previous session that ended because the quota limit was reached. The previous session did not make any of the changes described below. It stopped before implementing them, so please do not assume any of this work has already been completed.
+
+First, I want you to understand the project's history.
+
+During development, I intentionally asked a previous agent to create a development mode where anyone opening the app would automatically be logged in as dev_user. This was only to make development and testing easier without needing to go through the real Eitaa authentication flow every time.
+
+Later, when we thought the app was almost ready for production, I asked another agent to remove that development wiring and prepare the project for deployment. However, after more testing, I realized the app still needs additional work before it is actually ready for production.
+
+Because of that, I do not want the app to remain in production mode yet. I want the full development environment restored exactly as it was before, including the automatic dev_user login and any other development conveniences that were removed while preparing for production.
+
+However, I also want this done properly. I do not want development features permanently mixed into the production version. Instead, after restoring the development environment, create a dedicated production preparation script (or scripts) together with instructions explaining exactly how to run it. When I eventually decide the app is truly ready for deployment, I should be able to run that script, and it should prepare the project for production exactly according to the existing Deployment.md in this repository.
+
+That means the production preparation script should restore the project to the deployment state expected by Deployment.md, including removing the automatic development login and ensuring the application expects the real production configuration, authentication, and environment variables.
+
+Before doing that, I need you to fix the issues that were already identified during the previous investigation:
+
+1. Admin username mismatch
+
+The frontend and backend must agree on the administrator username. During development, the administrator username should remain dev_user. I will personally claim this username later. Do not change it to admin or any other username.
+
+2. Ads Terms of Service acceptance
+
+The database table for storing ad terms acceptance already exists, but it is not wired into the application. Users are asked to accept the Ads Terms of Service every time they open the advertising flow.
+
+Properly connect the frontend and backend so the acceptance is stored and checked correctly, allowing users who have already accepted the terms to skip that step automatically.
+
+3. Authentication consistency
+
+Verify that the authentication flow is fully consistent after restoring the development environment. During development, the automatic dev_user session should work correctly everywhere in the application so there are no partially authenticated states or features behaving inconsistently.
+
+4. Admin panel functionality
+
+After fixing the authentication wiring, verify that the Admin Panel works correctly again, including viewing pending channel verification requests and other administrator features.
+
+While working, carefully inspect the current project to understand its current state. Since the previous session ended unexpectedly because of the quota limit, verify what currently exists before making changes. However, do not assume the previous session already implemented these fixes—it did not.
+
+Finally, after everything is working again in development mode, create the production preparation script and explain exactly how to run it. Running that script should make the project match the expectations described in Deployment.md, so that when I finally deploy to my VPS, the application behaves exactly as documented there.
+
+Do not redesign the project or make unrelated improvements. Stay focused on restoring the development workflow, implementing the four fixes above, creating the production preparation script, and ensuring that both development mode and production mode have a clean, reliable transition between them.

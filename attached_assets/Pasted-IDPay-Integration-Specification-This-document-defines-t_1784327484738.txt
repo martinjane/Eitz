@@ -1,0 +1,61 @@
+IDPay Integration Specification
+
+This document defines the required integration contract for IDPay Web Service API v1.1. The application must implement the payment workflow using a backend service. The frontend must never communicate directly with IDPay, must never possess the merchant API key, and must never determine payment success independently.
+
+The backend is responsible for all communication with IDPay. The merchant API key is stored securely as a server-side secret. Sandbox mode is enabled only during development by sending the "X-SANDBOX: 1" request header. Production requests omit this header.
+
+The payment creation endpoint is "POST https://api.idpay.ir/v1.1/payment".
+
+Every request must include the headers:
+
+"Content-Type: application/json"
+
+"X-API-KEY: <merchant_api_key>"
+
+"X-SANDBOX: 1" (development only)
+
+The payment creation request body contains the merchant order identifier, payment amount, callback URL, and optional customer information.
+
+"order_id" is generated exclusively by the application backend and must be unique.
+
+"amount" is calculated exclusively by the backend and must never be accepted from client-side input.
+
+"callback" is a backend endpoint capable of receiving the user after payment completion.
+
+Optional customer fields such as "name", "phone", "mail", and "desc" may be supplied when available.
+
+A successful payment creation request returns an IDPay payment identifier ("id") and a payment URL ("link"). The backend must persist the returned payment identifier together with the internal order before responding to the client. The frontend redirects the customer to the returned payment URL.
+
+After payment completion, IDPay redirects the customer to the configured callback URL. Arrival at the callback endpoint is not proof of successful payment and must never activate products, subscriptions, donations, or licenses.
+
+Immediately after receiving the callback, the backend performs server-to-server verification using "POST https://api.idpay.ir/v1.1/payment/verify".
+
+The verification request contains only:
+
+"id" — the payment identifier previously returned by the payment creation request.
+
+"order_id" — the same merchant order identifier originally submitted during payment creation.
+
+Verification requests use the same authentication headers as payment creation.
+
+The verification response is the only authoritative payment result. Business logic must rely exclusively on the verification response.
+
+Status code "100" represents a successfully verified payment.
+
+Status code "101" indicates the payment has already been verified and should be treated as a successful idempotent verification.
+
+Only after receiving a successful verification response may the backend update the payment record, activate subscriptions, unlock premium functionality, record donations, generate invoices, or deliver digital products.
+
+The backend stores at minimum the internal order identifier, IDPay payment identifier, tracking identifier, payment amount, verification status, verification timestamp, and complete verification payload for audit purposes.
+
+The frontend must never store the merchant API key, call IDPay APIs directly, verify payments, trust callback parameters, or determine payment success independently. Its responsibilities are limited to initiating payment through the backend, redirecting the customer to the payment URL returned by the backend, and requesting payment status from the backend after returning from IDPay.
+
+The backend exposes a minimal integration surface consisting of an endpoint that creates a payment session, a callback endpoint that performs verification, and an endpoint allowing the frontend to query the verified payment status.
+
+Every payment operation must be idempotent. Duplicate callback requests, duplicate verification attempts, network retries, or page refreshes must never produce duplicate subscription activations, duplicate donation records, duplicate invoices, or duplicate product delivery.
+
+Network failures while communicating with IDPay are treated as indeterminate states. Orders remain pending until verification succeeds or an explicit failure is confirmed.
+
+Merchant credentials remain exclusively on the server. All communication with the backend and callback endpoints is performed over HTTPS. The backend validates all incoming identifiers against its own database before updating payment state. Client-supplied payment status is ignored under all circumstances.
+
+This architecture establishes the backend as the sole source of truth for payment state while keeping the frontend responsible only for user interaction and presentation.

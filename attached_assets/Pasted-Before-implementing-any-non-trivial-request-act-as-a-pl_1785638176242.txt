@@ -1,0 +1,144 @@
+Before implementing any non-trivial request, act as a planning agent.
+While planning, do not modify the application source code. You may only inspect and read project files to understand the codebase and produce a plan.
+Create a tasks/ folder in the project root if it doesn't already exist.
+For features or larger changes, create one or more Markdown task files in tasks/. Keep the number of tasks reasonable—prefer a few well-scoped tasks over many small ones. Do not create tasks for minor fixes or trivial changes.
+Use this format for every task:
+# Task: <Title> Description ## Plan 1. Analyse existing implementation 2. Make required changes 3. Test implementation 4. Verify behaviour ## Done - [ ] Feature implemented - [ ] Tests passing - [ ] Ready to apply ## Relevant Files - path/to/file1 - path/to/file2 - path/to/file3 --- ### Instructions for the Implementation Agent When this task is completed: 1. Delete this task file. 2. Continue with the remaining task that has the lowest numbered filename. 3. Repeat until no task files remain. 
+Present the task plan first and wait for approval before implementing, unless explicitly instructed to proceed immediately.
+the things you are going to make their tasks:Please improve how Saved Styles are applied to images with different dimensions.
+Currently, when a user creates a Saved Style, they design it on a blank canvas by placing logos, text, and other objects. The user adjusts each object's position and size until everything looks correct, then saves the style.
+When that Saved Style is later applied to another image, object positions are already handled correctly using percentage-based positioning. However, object sizes are not.
+For example, if the new image is significantly larger or smaller than the canvas the style was created on, the objects may appear far too large or far too small, even though their positions are correct.
+Please make object sizes scale proportionally as well.
+This should apply to any object that has a meaningful size, such as:
+
+Logos.
+
+Text.
+
+Other resizable objects.
+
+The goal is that when a Saved Style is applied to images of different dimensions, the overall layout should look as close as possible to what the user originally designed on the blank canvas. Objects should maintain approximately the same visual proportions relative to the image, rather than keeping fixed pixel sizes.
+There is no need to account for effects such as blur or filters for this change. The focus is on correctly scaling the size of resizable objects while preserving their relative appearance across different image sizes.
+
+Remove Picture-in-Picture from the Saved Styles Editor
+
+The Saved Styles editor should not support adding an image on top of the blank canvas.
+Saved Styles are intended to store reusable edits and layouts, not image files. We do not store users' images in the database, and requiring an image to be stored as part of a Saved Style would go against how the feature is designed.
+Please remove the ability to add a picture-in-picture image in the Saved Styles editor.
+However, do not remove logos. Logos should remain fully supported because they are selected from the user's previously uploaded logos that are already stored by the application and are intended to be reusable within Saved Styles.
+
+Clarify and Enforce the 10-Layer Limit
+
+There appears to have been a misunderstanding regarding the intended 10-layer limit for Saved Styles.
+The limit is not meant to apply only to movable/selectable objects such as text or logos.
+The purpose of the limit is to restrict the total amount of saved work stored in the database for a Saved Style.
+Therefore, any edit that becomes part of the Saved Style and is stored in the database should count as one of the 10 allowed layers or changes.
+This includes, for example:
+
+Logos.
+
+Text.
+
+Crops.
+
+Filters.
+
+Other saved edits or transformations.
+
+In other words, the limit should represent the total complexity of the Saved Style, not just the number of movable objects.
+
+Validate the Layer Limit on the Backend
+
+Please inspect the Saved Styles backend endpoint and verify that the 10-layer limit is enforced server-side.
+Do not rely only on the frontend UI.
+Even if a user bypasses or manipulates the UI, the backend should reject any attempt to save a Saved Style containing more than the allowed number of layers/changes.
+If this validation is not already implemented, add it so the database cannot be populated with Saved Styles that exceed the intended limit.
+
+Improve Advertisement Time Slot Reservation
+
+The current reservation system for advertisement time slots is still too easy to occupy.
+Although there are already rate limits and other restrictions, a user can still reserve a time slot simply by experimenting or changing their mind, preventing others from using that slot without being genuinely committed to purchasing it.
+Instead, only reserve a time slot after the user clicks the existing button to proceed to the payment gateway and begins the payment process.
+In other words:
+
+Browsing available slots should never reserve them.
+
+Selecting a slot should never reserve it.
+
+The reservation should only occur once the user explicitly proceeds to payment using the existing payment button.
+
+This should significantly reduce unnecessary reservation of advertisement slots while still protecting legitimate purchases.
+
+Pending, Successful, and Failed Payments
+
+Improve the payment experience by allowing users to view their payment history in Settings.
+Add a new Settings section that contains:
+
+Waiting payments.
+
+Successful payments.
+
+Failed payments.
+
+For Waiting Payments:
+
+Store the payment gateway redirect link until it expires.
+
+Allow the user to reopen the payment link at any time while it is still valid.
+
+Ensure payment callbacks continue to function correctly even if the payment is completed after reopening the saved link.
+
+Payment handling must be extremely reliable. It should be impossible for a valid payment to be lost or ignored by the system. The callback flow should be reviewed carefully so completed payments are always processed correctly.
+For Failed Payments:
+
+Keep failed payment records for only one hour after the payment expires or fails.
+
+After one hour, automatically remove them from the server.
+
+For Successful Payments:
+
+Keep successful payment records for one week.
+
+After one week, automatically remove them from the server.
+
+This prevents unnecessary database growth while still giving users enough time to review recent payment activity.
+
+Waiting Payment Notification
+
+If a user has one or more waiting payments, display a small notification indicator near the Settings button on the Home page.
+The purpose is simply to remind users that they have an unfinished payment waiting for completion.
+The notification should disappear automatically once there are no remaining waiting payments.
+
+Admin Panel UI Bug
+
+There is a UI bug in the Admin Panel.
+After approving an advertisement, the approval succeeds and the user can immediately use the advertisement as expected.
+However, the Accept and Reject buttons remain visible even though the advertisement has already been processed.
+Please refresh the UI correctly so once an advertisement has been accepted or rejected, the action buttons disappear or update appropriately to reflect the new state.
+
+Feedback Cooldown
+
+The feedback cooldown currently appears to be based on IP addresses because I previously requested not to associate feedback with users.
+Please change this behaviour.
+From now on, the cooldown should be enforced per user account rather than per IP address.
+However, do not use usernames for this because usernames can change.
+Use the application's permanent user identifier (for example, the existing internal user ID if one is already being used). If the application already uses a stable user ID for ownership and storage, continue using that instead of introducing a new system.
+
+Verify Username Change Safety
+
+Please review every endpoint that stores or retrieves user-specific data.
+Verify that changing a user's username can never cause:
+
+Another user's logos to appear.
+
+Another user's Saved Styles to appear.
+
+Another user's advertisements.
+
+Another user's channels.
+
+Any other user-specific data to become mixed between accounts.
+
+If the application already uses a permanent internal user ID for ownership, then simply verify that every relevant endpoint consistently uses it.
+Do not change the existing implementation unnecessarily if it is already correct. The goal is to confirm that username changes can never affect ownership or data retrieval.
