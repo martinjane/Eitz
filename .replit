@@ -1,5 +1,5 @@
 run = "PORT=8081 pnpm --filter @workspace/api-server run dev & PORT=8080 BASE_PATH=/ pnpm --filter @workspace/eitashot run dev & wait"
-modules = ["nodejs-20", "web", "bash"]
+modules = ["nodejs-20", "web", "bash", "postgresql-16"]
 
 [deployment]
 router = "application"
