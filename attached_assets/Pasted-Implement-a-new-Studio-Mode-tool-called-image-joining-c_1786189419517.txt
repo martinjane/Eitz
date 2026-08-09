@@ -1,0 +1,190 @@
+Implement a new Studio Mode tool called "چسباندن تصاویر" (image joining/composition). The goal is to allow users to create a final image composition by arranging multiple image blocks, while keeping the rest of the app working with the result as one normal image.
+
+Important: this tool is one part of Studio Mode, not the entire editor. Existing editor functionality, tools, and settings should continue to work normally.
+
+Core Concept: Block-Based Layout
+
+The feature should use a block-based composition model.
+A block is a rectangular/square area in the final composition.
+A block can be:
+
+Empty (خالی): has no image yet.
+
+Filled (پر): contains an image selected by the user.
+
+The layout is made from multiple blocks, and the final result is rendered as one combined image.
+The rest of the app should not need to understand separate blocks after the composition is created. Other tools should treat the result as the current image.
+
+Initial State
+
+When opening the feature:
+
+The current image should already exist inside the first block.
+
+Additional empty blocks should exist by default around it.
+
+The first original block cannot be removed.
+
+The user should be able to fill the empty blocks later.
+
+Block Management UI
+
+The block management UI is a small control interface for editing the structure.
+Important:
+
+It should not display the actual uploaded images.
+
+It should only show a visual representation of the block structure.
+
+The user should be able to see the real result on the main canvas while managing the blocks.
+
+Because the layout may become larger:
+
+Users should be able to zoom in and zoom out inside the block management UI.
+
+Users should be able to move/pan around the block layout to inspect larger compositions.
+
+Filling Blocks
+
+When the user selects a block:
+
+If it is empty, open image selection.
+
+The user selects a supported image.
+
+The image is placed inside that block.
+
+The image should automatically scale to fit its block area and fill the available space until reaching:
+
+the block boundaries,
+
+another image block,
+
+or separator lines.
+
+Adding New Blocks
+
+The layout should have + controls around available empty sides/areas.
+These + controls create new empty blocks, not images.
+The user is building the structure first and filling blocks afterwards.
+The layout must always remain a valid rectangular/square composition.
+Example:
+If a user adds a block below a row containing multiple blocks, do not create an invalid shape where only one part of the row extends downward.
+Instead, automatically create the necessary empty blocks so the overall composition remains rectangular.
+Empty blocks are valid and should appear as empty white areas in the final image.
+
+Merging Blocks
+
+Blocks should have merge controls between neighboring blocks.
+The user can merge compatible neighboring blocks into a larger block.
+Examples:
+
+Empty block + empty block → can merge.
+
+Filled block + empty neighboring block → can merge.
+
+Two separate filled blocks containing different images → should not merge.
+
+When a filled block merges with an empty block, the image simply gains a larger area and scales accordingly.
+
+Removing Blocks
+
+The remove action depends on the block state.
+Cases:
+
+Normal filled block:
+
+Removing removes the image from that block.
+
+Merged block:
+
+Removing should restore the previous separated block structure.
+
+Empty blocks:
+
+Be careful because removing one empty block can accidentally create invalid layouts.
+
+A row should only be removed when all blocks in that row are empty.
+The user should not accidentally lose an entire row just because they removed one empty block.
+The layout rules must prevent confusing situations where multiple remove buttons exist but only one valid removal is possible.
+
+Separator Lines
+
+Add an option for users to control separators between images.
+Settings:
+
+Enable/disable lines between images.
+
+If enabled, allow selecting the line color.
+
+If disabled, do not ask for a color.
+
+These lines should be part of the final exported composition.
+
+Empty Areas
+
+Empty blocks should remain visible as white areas.
+The final output should always be a valid rectangular/square image.
+Users should be allowed to leave blocks empty.
+
+Interaction With Existing Editor
+
+After the composition is created:
+
+Treat it as one normal image.
+
+Existing tools should work on the final image.
+
+Crop, filters, effects, text, logos, and other tools should not operate on individual blocks.
+
+If cropping removes or cuts part of the composition, that is acceptable because the editor already has undo functionality.
+
+Performance Protection
+
+Since this feature is client-side, protect users from lag.
+After each block is filled with an image:
+
+Check whether the editor is becoming slow.
+
+If performance starts degrading:
+
+Resize images already added by 50%.
+
+Resize future added images by 50%.
+
+The goal is preventing users from freezing the app by adding many large images.
+Do not add unnecessary artificial limits unless required for performance.
+
+Implementation Notes
+
+Use the existing project architecture and decide the best technical approach yourself.
+Do not create unnecessary complexity beyond the described behavior.
+The main goal is a simple but powerful composition tool where users control the structure through blocks instead of the app guessing how images should be arranged.
+
+AND THE PATCH IS THAT:
+
+Important: Preserve Existing Editor Objects During Composition
+
+When creating the final composed image, do not accidentally flatten or permanently merge existing editor objects into the image pixels.
+The current image may already contain editable objects such as:
+
+text objects,
+
+logos,
+
+stickers,
+
+and other selectable elements.
+
+After the composition is created and becomes the new main image:
+
+Existing objects from the original image should remain separate editable objects whenever the editor architecture supports it.
+
+Do not rasterize existing objects into the final image unless this is already the intended behavior of the existing editor.
+
+If the original image position, size, or boundaries change because of the composition layout, apply the same transformation to the existing objects so they remain visually attached to their original content.
+
+The user should still be able to select, move, edit, or remove these objects after the composition is completed.
+
+New images added through the image joining feature can become part of the composed image, but existing editor layers/objects should not unexpectedly become uneditable pixels.
+The goal is that image joining changes the base image while preserving the normal editor object workflow.
