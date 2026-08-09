@@ -3,7 +3,7 @@ import { useEditor } from "@/contexts/EditorContext";
 import {
   Crop, Maximize2, RotateCcw, FlipHorizontal2, Type, Paintbrush,
   Wand2, Sliders, ImagePlus, Download, Shield, Droplets, Layers2,
-  Wind, SquareAsterisk, PanelLeft, PanelBottom
+  Wind, SquareAsterisk, PanelLeft, PanelBottom, LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ALLOWED_STYLE_TOOLS } from "@/lib/savedStyle";
@@ -24,6 +24,7 @@ const QUICK_TOOLS: Tool[] = [
 ];
 
 const STUDIO_TOOLS: Tool[] = [
+  { id: "چسباندن تصاویر", icon: LayoutGrid, label: "چسباندن" },
   { id: "برش", icon: Crop, label: "برش" },
   { id: "تغییر اندازه", icon: Maximize2, label: "اندازه" },
   { id: "چرخش", icon: RotateCcw, label: "چرخش" },

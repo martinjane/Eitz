@@ -117,6 +117,7 @@ type PtrData = { screenX: number; screenY: number; canvasX: number; canvasY: num
 
 export default function EditorCanvas() {
   const { state, selectLayer, updateLayer, addLayer } = useEditor();
+  const displaySourceImage = state.compositionPreview || state.sourceImage;
   const containerRef = useRef<HTMLDivElement>(null);
   const viewportDivRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -214,8 +215,8 @@ export default function EditorCanvas() {
 
   /* ── Image loading + paint canvas init ── */
   useEffect(() => {
-    if (!state.sourceImage) return;
-    loadImg(state.sourceImage).then(img => {
+    if (!displaySourceImage) return;
+    loadImg(displaySourceImage).then(img => {
       baseImgRef.current = img;
       // Reset the paint canvas to match the new image dimensions
       const pc = document.createElement("canvas");
@@ -225,7 +226,7 @@ export default function EditorCanvas() {
       isDirtyRef.current = true;
       setTimeout(resetViewport, 30);
     });
-  }, [state.sourceImage, resetViewport]);
+  }, [displaySourceImage, resetViewport]);
 
   /* ── Layer image preloader ── */
   useEffect(() => {
@@ -242,7 +243,7 @@ export default function EditorCanvas() {
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const { adjustments, activeFilterStyle, layers, selectedLayerId } = state;
+      const { adjustments, activeFilterStyle, layers, selectedLayerId, compositionPreviewTransform } = state;
 
     renderFnRef.current = () => {
       const img = baseImgRef.current;
@@ -265,10 +266,15 @@ export default function EditorCanvas() {
       layers.forEach(layer => {
         const dragOv = dragOverrideRef.current?.id === layer.id ? dragOverrideRef.current : null;
          const sizeOv = sizeOverrideRef.current?.id === layer.id ? sizeOverrideRef.current : null;
-        const lx = dragOv?.x ?? layer.x;
-        const ly = dragOv?.y ?? layer.y;
-        const lw = sizeOv?.w ?? layer.width;
-        const lh = sizeOv?.h ?? layer.height;
+         const previewTransform = state.compositionPreview ? compositionPreviewTransform : null;
+         const baseX = dragOv?.x ?? layer.x;
+         const baseY = dragOv?.y ?? layer.y;
+         const baseW = sizeOv?.w ?? layer.width;
+         const baseH = sizeOv?.h ?? layer.height;
+         const lx = previewTransform ? previewTransform.offsetX + baseX * previewTransform.scaleX : baseX;
+         const ly = previewTransform ? previewTransform.offsetY + baseY * previewTransform.scaleY : baseY;
+         const lw = previewTransform ? baseW * previewTransform.scaleX : baseW;
+         const lh = previewTransform ? baseH * previewTransform.scaleY : baseH;
 
         ctx.save();
         ctx.globalAlpha = layer.opacity;
@@ -326,7 +332,7 @@ export default function EditorCanvas() {
       }
     };
     isDirtyRef.current = true;
-  }, [state]);
+   }, [state]);
 
   /* ── rAF loop — runs regardless of drawing state ── */
   useEffect(() => {

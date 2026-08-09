@@ -41,6 +41,11 @@ export type Adjustments = {
 
 export type EditorState = {
   sourceImage: string | null;
+  /** A temporary Studio composition preview; the committed base stays in sourceImage. */
+  compositionPreview: string | null;
+  compositionPreviewWidth: number;
+  compositionPreviewHeight: number;
+  compositionPreviewTransform: { offsetX: number; offsetY: number; scaleX: number; scaleY: number } | null;
   imageWidth: number;
   imageHeight: number;
   layers: Layer[];
@@ -92,6 +97,15 @@ type EditorContextType = {
   applyFlip: (axis: 'h' | 'v') => void;
   applyBlur: (amount: number) => void;
   applyFrame: (width: number, color: string) => void;
+  setCompositionPreview: (
+    preview: {
+      dataUrl: string;
+      width: number;
+      height: number;
+      transform: { offsetX: number; offsetY: number; scaleX: number; scaleY: number };
+    } | null,
+  ) => void;
+  applyComposition: (dataUrl: string, width: number, height: number, transform: { offsetX: number; offsetY: number; scaleX: number; scaleY: number }) => void;
   loadImage: (dataUrl: string) => void;
   exportCanvas: () => void;
   undo: () => void;
@@ -107,6 +121,10 @@ const MAX_HISTORY = 20;
 
 const defaultState: EditorState = {
   sourceImage: null,
+  compositionPreview: null,
+  compositionPreviewWidth: 0,
+  compositionPreviewHeight: 0,
+  compositionPreviewTransform: null,
   imageWidth: 0,
   imageHeight: 0,
   layers: [],
@@ -231,11 +249,47 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setMode = useCallback((mode: EditorMode) => {
-    setState(s => ({ ...s, mode, tool: '' }));
+    setState(s => ({
+      ...s,
+      mode,
+      tool: '',
+      compositionPreview: null,
+      compositionPreviewWidth: 0,
+      compositionPreviewHeight: 0,
+      compositionPreviewTransform: null,
+    }));
+  }, []);
+
+  const setCompositionPreview = useCallback((preview: {
+    dataUrl: string;
+    width: number;
+    height: number;
+    transform: { offsetX: number; offsetY: number; scaleX: number; scaleY: number };
+  } | null) => {
+    setState(s => ({
+      ...s,
+      compositionPreview: preview?.dataUrl ?? null,
+      compositionPreviewWidth: preview?.width ?? 0,
+      compositionPreviewHeight: preview?.height ?? 0,
+      compositionPreviewTransform: preview?.transform ?? null,
+    }));
   }, []);
 
   const setTool = useCallback((tool: string) => {
-    setState(s => ({ ...s, tool: s.tool === tool ? '' : tool, selectedLayerId: null }));
+    setState(s => {
+      const nextTool = s.tool === tool ? '' : tool;
+      return {
+        ...s,
+        tool: nextTool,
+        selectedLayerId: null,
+        ...(nextTool === 'چسباندن تصاویر' ? {} : {
+          compositionPreview: null,
+          compositionPreviewWidth: 0,
+          compositionPreviewHeight: 0,
+          compositionPreviewTransform: null,
+        }),
+      };
+    });
   }, []);
 
   const updateAdjustment = useCallback((key: keyof Adjustments, value: number) => {
@@ -454,6 +508,38 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     img.src = s.sourceImage;
   }, [recordHistory]);
 
+  const applyComposition = useCallback((
+    dataUrl: string,
+    width: number,
+    height: number,
+    transform: { offsetX: number; offsetY: number; scaleX: number; scaleY: number },
+  ) => {
+    const { offsetX, offsetY, scaleX, scaleY } = transform;
+    recordHistory();
+    setState(prev => ({
+      ...prev,
+      sourceImage: dataUrl,
+      imageWidth: width,
+      imageHeight: height,
+      compositionPreview: null,
+      compositionPreviewWidth: 0,
+      compositionPreviewHeight: 0,
+      compositionPreviewTransform: null,
+      layers: prev.layers.map(layer => ({
+        ...layer,
+        x: offsetX + layer.x * scaleX,
+        y: offsetY + layer.y * scaleY,
+        width: Math.max(1, layer.width * scaleX),
+        height: Math.max(1, layer.height * scaleY),
+        ...(layer.type === 'text' && layer.fontSize
+          ? { fontSize: Math.max(8, layer.fontSize * Math.min(scaleX, scaleY)) }
+          : {}),
+      })),
+      selectedLayerId: null,
+      tool: '',
+    }));
+  }, [recordHistory]);
+
   /**
    * Enter Saved Style creation mode: forces studio mode, opens a blank canvas.
    * The blank canvas itself is never saved — only the layer objects are persisted.
@@ -520,6 +606,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       state, setState, setMode, setTool, updateAdjustment, resetAdjustments, setFilter,
       addLayer, updateLayer, deleteLayer, selectLayer, reorderLayer, duplicateLayer,
       applyCrop, applyResize, applyRotate, applyFlip, applyBlur, applyFrame,
+      setCompositionPreview, applyComposition,
       loadImage, exportCanvas,
       undo, redo, canUndo, canRedo,
       enterStyleMode, exitStyleMode, clearStyleLimitWarning,

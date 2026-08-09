@@ -10,6 +10,7 @@ import { Check, X, RotateCcw, RotateCw, FlipHorizontal2, FlipVertical2, Download
 import { toJalaliFilename } from "@/lib/jalali";
 import { listLogos, uploadLogo, deleteLogo, type LogoRecord } from "@/lib/logosApi";
 import { toast } from "@/hooks/use-toast";
+import ImageJoiningPanel from "./ImageJoiningPanel";
 
 function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
@@ -198,10 +199,11 @@ export default function ToolPanel() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 24, opacity: 0 }}
         transition={{ duration: 0.13, ease: "easeOut" }}
-        className="shrink-0 bg-card border-t border-border z-20"
+         className={`shrink-0 bg-card border-t border-border z-20 ${state.tool === "چسباندن تصاویر" ? "max-h-[470px]" : ""}`}
         dir="rtl"
       >
-        <div className="px-3 pt-2.5 pb-2 max-h-[162px] overflow-y-auto">
+        <div className={`px-3 pt-2.5 pb-2 overflow-y-auto ${state.tool === "چسباندن تصاویر" ? "max-h-[470px]" : "max-h-[162px]"}`}>
+          {state.tool === "چسباندن تصاویر" && <ImageJoiningPanel />}
 
           {/* RESIZE */}
           {state.tool === "تغییر اندازه" && (
