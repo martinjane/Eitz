@@ -213,20 +213,6 @@ export default function Home() {
             <p className="text-xs text-muted-foreground">PNG، JPG، WEBP پشتیبانی می‌شود</p>
           </div>
 
-          {/* Feature cards */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: "⚡", title: "ویرایش سریع", desc: "ابزارهای پایه برای کاربران روزمره" },
-              { icon: "🎨", title: "استودیو سازنده", desc: "برای مدیران کانال و سازندگان محتوا" },
-            ].map((item) => (
-              <div key={item.title} className="bg-card rounded-2xl p-3.5 border border-border text-right">
-                <div className="text-xl mb-1.5">{item.icon}</div>
-                <div className="font-semibold text-sm text-foreground">{item.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-
           <div className="bg-card border border-border rounded-2xl p-4 text-right space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-foreground">بازخورد یا گزارش مشکل</h2>

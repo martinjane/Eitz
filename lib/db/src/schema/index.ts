@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   lastName:      text("last_name"),
   deviceId:      text("device_id"),
   tosAcceptedAt: timestamp("tos_accepted_at"),   // set on first registration; null for pre-ToS accounts
+  registrationMessageSent: boolean("registration_message_sent").default(false).notNull(),
   createdAt:     timestamp("created_at").defaultNow().notNull(),
   updatedAt:     timestamp("updated_at").defaultNow().notNull(),
 });

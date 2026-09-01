@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { MAX_STYLE_OBJECTS } from '@/lib/savedStyle';
 import { getDeviceResolution } from '@/lib/deviceCapability';
+import { getAutoReduceEnabled } from '@/lib/autoReduceStorage';
 
 export type LayerType = 'text' | 'image' | 'shape';
 export type EditorMode = 'quick' | 'studio';
@@ -67,6 +68,20 @@ export type EditorState = {
   /** True while creating/editing a Saved Style: restricts tools + hard-caps object count. */
   styleMode: boolean;
   styleLimitWarning: string | null;
+  /** Temporary notification when automatic image reduction occurred. */
+  imageReducedWarning: string | null;
+  /** Persisted Image Joining layout state for re-entry. */
+  imageJoiningState: {
+    regions: Array<{
+      id: string; row: number; col: number; rowSpan: number; colSpan: number;
+      src: string | null;
+      parts?: Array<{ id: string; row: number; col: number; rowSpan: number; colSpan: number; src: string | null }>;
+    }>;
+    rows: number;
+    cols: number;
+    /** The sourceImage dataUrl at the time the layout was saved — used to detect stale layouts. */
+    sourceImageRef: string;
+  } | null;
 };
 
 // Only the fields that matter for undo/redo
@@ -106,6 +121,7 @@ type EditorContextType = {
     } | null,
   ) => void;
   applyComposition: (dataUrl: string, width: number, height: number, transform: { offsetX: number; offsetY: number; scaleX: number; scaleY: number }) => void;
+  setImageJoiningState: (s: EditorState['imageJoiningState']) => void;
   loadImage: (dataUrl: string) => void;
   exportCanvas: () => void;
   undo: () => void;
@@ -115,6 +131,7 @@ type EditorContextType = {
   enterStyleMode: () => void;
   exitStyleMode: () => void;
   clearStyleLimitWarning: () => void;
+  clearImageReducedWarning: () => void;
 };
 
 const MAX_HISTORY = 20;
@@ -145,6 +162,8 @@ const defaultState: EditorState = {
   drawSize: 10,
   styleMode: false,
   styleLimitWarning: null,
+  imageReducedWarning: null,
+  imageJoiningState: null,
 };
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -163,22 +182,24 @@ function makeSnapshot(s: EditorState): HistorySnapshot {
   };
 }
 
-function downsampleIfNeeded(dataUrl: string): Promise<string> {
+function downsampleIfNeeded(dataUrl: string): Promise<{ dataUrl: string; reduced: boolean }> {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const maxDim = Math.max(img.width, img.height);
+      // Respect the user's auto-reduce setting
+      if (!getAutoReduceEnabled()) { resolve({ dataUrl, reduced: false }); return; }
       // Use device-appropriate limit instead of a fixed constant.
       // getDeviceResolution() is cached after first call so this is cheap.
       const limit = getDeviceResolution();
-      if (maxDim <= limit) { resolve(dataUrl); return; }
+      if (maxDim <= limit) { resolve({ dataUrl, reduced: false }); return; }
       const scale = limit / maxDim;
       const newW = Math.round(img.width * scale);
       const newH = Math.round(img.height * scale);
       const canvas = document.createElement('canvas');
       canvas.width = newW; canvas.height = newH;
       canvas.getContext('2d')!.drawImage(img, 0, 0, newW, newH);
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      resolve({ dataUrl: canvas.toDataURL('image/jpeg', 0.92), reduced: true });
     };
     img.src = dataUrl;
   });
@@ -229,7 +250,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   /* ─── Non-destructive: no history ─── */
 
   const loadImage = useCallback((dataUrl: string) => {
-    downsampleIfNeeded(dataUrl).then(optimized => {
+    downsampleIfNeeded(dataUrl).then(({ dataUrl: optimized, reduced }) => {
       const img = new Image();
       img.onload = () => {
         // Clear history when a new image is loaded
@@ -242,6 +263,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           imageWidth: img.width,
           imageHeight: img.height,
           mode: s.mode,
+          imageReducedWarning: reduced ? "کیفیت تصویر برای روان ماندن ویرایشگر کاهش یافت. در صورت نیاز از تنظیمات تصویر غیرفعال کنید." : null,
         }));
       };
       img.src = optimized;
@@ -258,6 +280,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       compositionPreviewHeight: 0,
       compositionPreviewTransform: null,
     }));
+  }, []);
+
+  const setImageJoiningState = useCallback((s: EditorState['imageJoiningState']) => {
+    setState(prev => ({ ...prev, imageJoiningState: s }));
   }, []);
 
   const setCompositionPreview = useCallback((preview: {
@@ -288,6 +314,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           compositionPreviewHeight: 0,
           compositionPreviewTransform: null,
         }),
+        // Clear stale image joining state when source image has changed
+        ...(nextTool === 'چسباندن تصاویر' && s.imageJoiningState && s.imageJoiningState.sourceImageRef !== s.sourceImage
+          ? { imageJoiningState: null } : {}),
       };
     });
   }, []);
@@ -592,6 +621,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setState(s => ({ ...s, styleLimitWarning: null }));
   }, []);
 
+  const clearImageReducedWarning = useCallback(() => {
+    setState(s => ({ ...s, imageReducedWarning: null }));
+  }, []);
+
   const exportCanvas = useCallback(() => {
     const canvas = document.getElementById('eitashot-canvas') as HTMLCanvasElement;
     if (!canvas) return;
@@ -606,10 +639,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       state, setState, setMode, setTool, updateAdjustment, resetAdjustments, setFilter,
       addLayer, updateLayer, deleteLayer, selectLayer, reorderLayer, duplicateLayer,
       applyCrop, applyResize, applyRotate, applyFlip, applyBlur, applyFrame,
-      setCompositionPreview, applyComposition,
+      setCompositionPreview, applyComposition, setImageJoiningState,
       loadImage, exportCanvas,
       undo, redo, canUndo, canRedo,
-      enterStyleMode, exitStyleMode, clearStyleLimitWarning,
+      enterStyleMode, exitStyleMode, clearStyleLimitWarning, clearImageReducedWarning,
     }}>
       {children}
     </EditorContext.Provider>

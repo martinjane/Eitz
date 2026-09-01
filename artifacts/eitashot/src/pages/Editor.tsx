@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useEditor } from "@/contexts/EditorContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { LoginRequiredModal } from "@/components/LoginRequiredModal";
 import { EitashotLogo } from "@/components/EitashotLogo";
 import { useTheme } from "@/hooks/useTheme";
 import EditorCanvas from "@/components/editor/EditorCanvas";
@@ -17,9 +18,12 @@ import { toast } from "@/hooks/use-toast";
 
 export default function Editor() {
   const [, setLocation] = useLocation();
-  const { state, setState, setMode, exportCanvas, undo, redo, canUndo, canRedo, exitStyleMode, clearStyleLimitWarning } = useEditor();
-  const { getToken } = useAuth();
+  const { state, setState, setMode, exportCanvas, undo, redo, canUndo, canRedo, exitStyleMode, clearStyleLimitWarning, clearImageReducedWarning } = useEditor();
+  const { auth, testMode, getToken } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [toolbarPosition, setToolbarPosition] = useState<"bottom" | "left">("bottom");
+  const [toolbarPositionBeforeJoin, setToolbarPositionBeforeJoin] = useState<"bottom" | "left" | null>(null);
+  const isImageJoiningActive = state.tool === "چسباندن تصاویر";
   const { isDark, toggle: toggleTheme } = useTheme();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [styleName, setStyleName] = useState("");
@@ -31,12 +35,41 @@ export default function Editor() {
     }
   }, [state.sourceImage, setLocation]);
 
+  // When testMode is false and user is guest, show login modal
+  useEffect(() => {
+    if (!testMode && auth.status === "guest") {
+      setShowLoginModal(true);
+    }
+  }, [testMode, auth.status]);
+
+  // Auto-switch toolbar to left when Image Joining opens, restore on close
+  useEffect(() => {
+    if (isImageJoiningActive && toolbarPosition !== "left") {
+      setToolbarPositionBeforeJoin(toolbarPosition);
+      setToolbarPosition("left");
+    } else if (!isImageJoiningActive && toolbarPositionBeforeJoin !== null) {
+      setToolbarPosition(toolbarPositionBeforeJoin);
+      setToolbarPositionBeforeJoin(null);
+    }
+  }, [isImageJoiningActive]);
+
   useEffect(() => {
     if (state.styleLimitWarning) {
       toast({ title: "محدودیت اشیاء", description: state.styleLimitWarning, variant: "destructive" });
       clearStyleLimitWarning();
     }
   }, [state.styleLimitWarning, clearStyleLimitWarning]);
+
+  useEffect(() => {
+    if (state.imageReducedWarning) {
+      toast({
+        title: "کیفیت تصویر کاهش یافت",
+        description: state.imageReducedWarning + " اگر تفاوت کیفیت محسوسی ندارید، بهتر است برگردانده نشود.",
+        duration: 12000,
+      });
+      clearImageReducedWarning();
+    }
+  }, [state.imageReducedWarning, clearImageReducedWarning]);
 
   const handleBack = () => {
     if (state.styleMode) {
@@ -156,8 +189,8 @@ export default function Editor() {
         </div>
       </header>
 
-      {/* Image info bar */}
-      {state.imageWidth > 0 && (
+      {/* Image info bar — hidden during Image Joining */}
+      {state.imageWidth > 0 && !isImageJoiningActive && (
         <div className="h-6 bg-muted/50 border-b border-border flex items-center px-4 gap-3 shrink-0">
           <span className="text-[10px] text-muted-foreground">
             {state.imageWidth} × {state.imageHeight} px
@@ -179,7 +212,7 @@ export default function Editor() {
       {/* Canvas area — flex-row when toolbar is on the left */}
       <div className="flex-1 min-h-0 flex overflow-hidden" dir="ltr">
         {toolbarPosition === "left" && (
-          <ToolBar position="left" onToggle={() => setToolbarPosition("bottom")} />
+          <ToolBar position="left" onToggle={() => { if (!isImageJoiningActive) setToolbarPosition("bottom"); }} />
         )}
         <div className="flex-1 min-h-0 relative overflow-hidden canvas-bg">
           <EditorCanvas />
@@ -195,13 +228,13 @@ export default function Editor() {
       {/* Tool panel */}
       <ToolPanel />
 
-      {/* Bottom toolbar (hidden when toolbar is on the left) */}
-      {toolbarPosition === "bottom" && (
+      {/* Bottom toolbar (hidden when toolbar is on the left, or during Image Joining) */}
+      {toolbarPosition === "bottom" && !isImageJoiningActive && (
         <ToolBar position="bottom" onToggle={() => setToolbarPosition("left")} />
       )}
 
-      {/* Mode switcher — hidden while creating a Saved Style (studio mode is forced) */}
-      {!state.styleMode && (
+      {/* Mode switcher — hidden during Image Joining or while creating a Saved Style */}
+      {!state.styleMode && !isImageJoiningActive && (
         <div className="h-11 bg-card border-t border-border flex shrink-0">
           <button
             onClick={() => setMode("quick")}
@@ -224,7 +257,7 @@ export default function Editor() {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            استودیو سازنده
+            استودیو
           </button>
         </div>
       )}
@@ -280,6 +313,7 @@ export default function Editor() {
           </motion.div>
         )}
       </AnimatePresence>
+      <LoginRequiredModal open={showLoginModal} onClose={() => { setShowLoginModal(false); if (!state.sourceImage) setLocation("/"); }} />
     </div>
   );
 }

@@ -124,6 +124,13 @@ export default function EditorCanvas() {
   const baseImgRef = useRef<HTMLImageElement | null>(null);
   const zoomLabelRef = useRef<HTMLSpanElement>(null);
   const zoomSliderRef = useRef<HTMLInputElement>(null);
+  const [showZoomControls, setShowZoomControls] = React.useState(false);
+  const zoomCollapseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetZoomCollapseTimer = React.useCallback(() => {
+    if (zoomCollapseRef.current) clearTimeout(zoomCollapseRef.current);
+    zoomCollapseRef.current = setTimeout(() => setShowZoomControls(false), 3000);
+  }, []);
 
   // Separate offscreen canvas for paint strokes — prevents filter compounding
   // and layer capture when strokes are baked back into sourceImage.
@@ -199,6 +206,7 @@ export default function EditorCanvas() {
 
   /* ── Zoom via slider ── */
   const handleSliderZoom = useCallback((pct: number) => {
+    resetZoomCollapseTimer();
     const newScale = Math.max(minScaleRef.current, Math.min(6, pct / 100));
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -227,6 +235,22 @@ export default function EditorCanvas() {
       setTimeout(resetViewport, 30);
     });
   }, [displaySourceImage, resetViewport]);
+
+  /* ── ResizeObserver: re-fit viewport when the canvas container resizes
+       (e.g. when the ToolPanel collapses after applying Image Joining) ── */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let resizeRaf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        if (baseImgRef.current) resetViewport();
+      });
+    });
+    ro.observe(el);
+    return () => { ro.disconnect(); cancelAnimationFrame(resizeRaf); };
+  }, [resetViewport]);
 
   /* ── Layer image preloader ── */
   useEffect(() => {
@@ -344,7 +368,10 @@ export default function EditorCanvas() {
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (zoomCollapseRef.current) clearTimeout(zoomCollapseRef.current);
+    };
   }, []);
 
   /* ── Canvas coordinate mapping ── */
@@ -411,6 +438,8 @@ export default function EditorCanvas() {
       }
 
       pinchZoomRef.current = { prevDist: dist, prevMidX: midX, prevMidY: midY };
+      setShowZoomControls(true);
+      resetZoomCollapseTimer();
       return;
     }
 
@@ -596,6 +625,7 @@ export default function EditorCanvas() {
     if (remaining < 2) {
       pinchResizeRef.current = null;
       pinchZoomRef.current = null;
+      resetZoomCollapseTimer();
       if (remaining === 1) {
         const [remainingId, remainingPt] = [...pointersRef.current.entries()][0];
         panRef.current = {
@@ -644,42 +674,26 @@ export default function EditorCanvas() {
         />
       </div>
 
-      {/* Zoom controls */}
+      {/* Zoom controls — circle button ↔ expandable slider */}
       <div
-        className="absolute bottom-3 right-3 z-10 flex items-center gap-1 bg-background/85 backdrop-blur border border-border px-2 py-1.5 rounded-xl shadow"
+        className="absolute bottom-3 right-3 z-10"
         dir="ltr"
         onPointerDown={e => e.stopPropagation()}
         onPointerMove={e => e.stopPropagation()}
         onPointerUp={e => e.stopPropagation()}
       >
-        <button
-          className="w-5 h-5 flex items-center justify-center text-base leading-none text-muted-foreground hover:text-foreground rounded transition-colors"
-          onClick={() => handleSliderZoom(viewportRef.current.scale * 100 / 1.25)}
-          title="کوچک‌تر"
-        >−</button>
-        <input
-          ref={zoomSliderRef}
-          type="range"
-          min="10"
-          max="600"
-          defaultValue="100"
-          step="1"
-          className="w-14 cursor-pointer"
-          style={{ accentColor: "hsl(22 88% 47%)", height: "3px" }}
-          onChange={e => handleSliderZoom(parseInt(e.target.value))}
-        />
-        <button
-          className="w-5 h-5 flex items-center justify-center text-base leading-none text-muted-foreground hover:text-foreground rounded transition-colors"
-          onClick={() => handleSliderZoom(viewportRef.current.scale * 100 * 1.25)}
-          title="بزرگ‌تر"
-        >+</button>
-        <button
-          className="text-[10px] font-mono text-muted-foreground hover:text-foreground min-w-[30px] text-center transition-colors"
-          onClick={resetViewport}
-          title="ریست زوم"
-        >
-          <span ref={zoomLabelRef}>100%</span>
-        </button>
+        {showZoomControls ? (
+          <div className="flex items-center gap-1 bg-background/85 backdrop-blur border border-border px-2 py-1.5 rounded-xl shadow" style={{ animation: "rollIn 0.3s ease-out" }}>
+            <button className="w-5 h-5 flex items-center justify-center text-base leading-none text-muted-foreground hover:text-foreground rounded transition-colors" onClick={() => handleSliderZoom(viewportRef.current.scale * 100 / 1.25)} title="کوچک‌تر">−</button>
+            <input ref={zoomSliderRef} type="range" min="10" max="600" defaultValue="100" step="1" className="w-14 cursor-pointer" style={{ accentColor: "hsl(22 88% 47%)", height: "3px" }} onChange={e => handleSliderZoom(parseInt(e.target.value))} />
+            <button className="w-5 h-5 flex items-center justify-center text-base leading-none text-muted-foreground hover:text-foreground rounded transition-colors" onClick={() => handleSliderZoom(viewportRef.current.scale * 100 * 1.25)} title="بزرگ‌تر">+</button>
+            <button className="text-[10px] font-mono text-muted-foreground hover:text-foreground min-w-[30px] text-center transition-colors" onClick={resetViewport} title="ریست زوم"><span ref={zoomLabelRef}>100%</span></button>
+          </div>
+        ) : (
+          <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow flex items-center justify-center transition-colors" onClick={() => { setShowZoomControls(true); resetZoomCollapseTimer(); }} title="بزرگنمایی">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="21" y2="21" /></svg>
+          </button>
+        )}
       </div>
 
       {isCropMode && <CropOverlay canvasRef={canvasRef} containerRef={containerRef} />}

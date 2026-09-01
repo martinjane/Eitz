@@ -16,7 +16,7 @@
 
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
-import { db, payments, advertisements, adWindows, savedAds, userAdTermsAcceptance, channelVerifications, pricingConfig } from "@workspace/db";
+import { db, payments, advertisements, adWindows, savedAds, userAdTermsAcceptance, channelVerifications, pricingConfig, users } from "@workspace/db";
 import { eq, and, or, lt, inArray, count, ne } from "drizzle-orm";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { createPayment, verifyPayment, isVerifiedStatus } from "../lib/idpay";
@@ -27,6 +27,7 @@ import {
 } from "../lib/iranTime";
 import { logger } from "../lib/logger";
 import { adSubmitLimiter, adPayLimiter, generalReadLimiter } from "../lib/rateLimiter";
+import { sendMessage, paymentSuccessMessage, paymentFailedMessage } from "../lib/eitaa";
 import { DEFAULT_PRICING } from "../lib/adminAuth";
 
 const router = Router();
@@ -604,6 +605,21 @@ router.post("/callback", async (req, res) => {
           .where(eq(advertisements.id, record.refId));
       }
 
+      // Send payment success Eitaa message (fire-and-forget, best-effort)
+      if (record.userId) {
+        db.select({ eitaaId: users.eitaaId })
+          .from(users)
+          .where(eq(users.id, record.userId))
+          .limit(1)
+          .then(([user]) => {
+            if (user?.eitaaId) {
+              const amountTomans = Math.floor(record.amountRials / 10);
+              sendMessage(user.eitaaId, paymentSuccessMessage(amountTomans, orderId));
+            }
+          })
+          .catch(() => { /* fire-and-forget */ });
+      }
+
       return res.redirect(
         `${frontendBase}/advertise?payment=success&orderId=${orderId}`,
       );
@@ -615,6 +631,20 @@ router.post("/callback", async (req, res) => {
           verificationPayload: verification as unknown as Record<string, unknown>,
         })
         .where(eq(payments.orderId, orderId));
+
+      // Send payment failed Eitaa message (fire-and-forget, best-effort)
+      if (record.userId) {
+        db.select({ eitaaId: users.eitaaId })
+          .from(users)
+          .where(eq(users.id, record.userId))
+          .limit(1)
+          .then(([user]) => {
+            if (user?.eitaaId) {
+              sendMessage(user.eitaaId, paymentFailedMessage(orderId));
+            }
+          })
+          .catch(() => { /* fire-and-forget */ });
+      }
 
       return res.redirect(`${frontendBase}/advertise?payment=failed`);
     }

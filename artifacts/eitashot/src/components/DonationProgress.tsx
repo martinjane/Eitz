@@ -121,7 +121,7 @@ export function DonationProgress({ onDonateClick }: DonationProgressProps) {
               </div>
 
               <p className="text-sm text-muted-foreground leading-7">
-                برای فعال ماندن این سرویس، هر ۳۰ روز حدود ۲۹۸ هزار تومان هزینه
+                برای فعال ماندن این سرویس، هر ۳۰ روز حدود {toPersianNumber(targetTomans)} تومان هزینه
                 زیرساخت پرداخت می‌شود. این نوار میزان کمک‌های همین دوره را نشان
                 می‌دهد. اگر این مبلغ تکمیل نشود، باقی هزینه توسط توسعه‌دهنده
                 پرداخت می‌شود. اگر این پروژه برایتان مفید بوده، حتی کمک‌های

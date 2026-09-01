@@ -10,8 +10,10 @@ import React, {
 // ── Eitaa SDK global types ────────────────────────────────────────────────────
 export interface EitaaWebApp {
   ready(): void;
+  expand(): void;
   initData: string;
   initDataUnsafe: Record<string, unknown>;
+  requestWriteAccess?(callback?: (granted: boolean) => void): void;
 }
 
 declare global {
@@ -72,6 +74,12 @@ async function apiFetch(
 // ── Context value ─────────────────────────────────────────────────────────────
 interface AuthContextValue {
   auth: AuthState;
+  /** Whether the backend is in test mode (dev session available, guest access OK). */
+  testMode: boolean;
+  /** When true, the frontend must not render the app (non-Eitaa user in production). */
+  blocked: boolean;
+  /** Whether the backend config has been fetched. Used to prevent flash of content. */
+  configLoaded: boolean;
   /** @deprecated Backend-only config flag — kept for API compatibility but no longer gates UI. */
   authRequired: boolean;
   /** Manually trigger Eitaa SDK login (no-op in simulated dev mode). */
@@ -94,6 +102,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, dispatch] = useReducer(reducer, { status: "loading" });
   const [authRequired] = React.useState(false);
+  const [testMode, setTestMode] = React.useState(true); // default true = safe dev default
+  const [blocked, setBlocked] = React.useState(false);
+  const [configLoaded, setConfigLoaded] = React.useState(false);
   const didInit = useRef(false);
 
   // Shared: try Eitaa initData → resolve authenticated / needs_username
@@ -134,12 +145,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   }, []);
 
-  // On mount: restore session → real Eitaa SDK → guest
+  // On mount: fetch config → restore session → dev-session → Eitaa SDK → guest
   useEffect(() => {
     if (didInit.current) return; // StrictMode guard
     didInit.current = true;
 
     (async () => {
+      // 0. Fetch backend config to determine testMode (fire-and-forget for UI gating).
+      //    We do NOT gate auth decisions on this — the backend already enforces
+      //    testMode on /dev-session, so we always attempt it and let the server decide.
+      fetch(`${API_BASE}/api/config`)
+        .then(r => r.ok ? r.json() : null)
+        .then(cfg => {
+          if (!cfg) return;
+          if (typeof cfg.testMode === "boolean") setTestMode(cfg.testMode);
+          if (typeof cfg.blocked === "boolean") setBlocked(cfg.blocked);
+        })
+        .catch(() => { /* silent */ })
+        .finally(() => setConfigLoaded(true));
+
       // 1. Try existing session token
       const stored = localStorage.getItem(TOKEN_KEY);
       if (stored) {
@@ -154,22 +178,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem(TOKEN_KEY); // expired / invalid
       }
 
-      // 2. Dev-session auto-login (Vite dev mode only — never in production builds).
-      //    This replaces the Eitaa SDK flow during local development so the app
-      //    can be tested without a real Eitaa bot and initData.
-      if (import.meta.env.DEV) {
-        try {
-          const res = await apiFetch("/dev-session", { method: "GET" });
-          if (res.ok) {
-            const data = await res.json() as { status?: string; token?: string; user?: AppUser };
-            if (data.status === "ok" && data.token && data.user) {
-              localStorage.setItem(TOKEN_KEY, data.token);
-              dispatch({ type: "AUTHENTICATED", user: data.user, token: data.token });
-              return;
-            }
+      // 2. Dev-session auto-login.
+      //    The backend gates this on isTestMode(): when TEST_MODE=false it returns
+      //    404, so this is always safe to attempt regardless of frontend state.
+      try {
+        const res = await apiFetch("/dev-session", { method: "GET" });
+        if (res.ok) {
+          const data = await res.json() as { status?: string; token?: string; user?: AppUser };
+          if (data.status === "ok" && data.token && data.user) {
+            localStorage.setItem(TOKEN_KEY, data.token);
+            dispatch({ type: "AUTHENTICATED", user: data.user, token: data.token });
+            return;
           }
-        } catch { /* network error — fall through to Eitaa SDK */ }
-      }
+        }
+      } catch { /* network error — fall through to Eitaa SDK */ }
 
       // 3. Auto-login via Eitaa SDK (works when opened inside Eitaa app)
       const sdkOk = await attemptEitaaLogin();
@@ -210,6 +232,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.token && data.user) {
           localStorage.setItem(TOKEN_KEY, data.token);
           dispatch({ type: "AUTHENTICATED", user: data.user, token: data.token });
+
+          // After first-time registration, request Eitaa bot message permission.
+          // This is fire-and-forget: the user can refuse and still use the app.
+          // Only runs when the Eitaa SDK is available (inside Eitaa app).
+          const webapp = window.Eitaa?.WebApp;
+          if (webapp?.requestWriteAccess) {
+            try {
+              webapp.requestWriteAccess((granted: boolean) => {
+                console.log(
+                  granted
+                    ? "[auth] Eitaa message permission granted"
+                    : "[auth] Eitaa message permission declined",
+                );
+              });
+            } catch {
+              // SDK call failed — not critical, app continues normally
+            }
+          }
+
           return { ok: true };
         }
         return { ok: false, error: "پاسخ سرور نامعتبر است" };
@@ -248,7 +289,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [auth]);
 
   return (
-    <AuthContext.Provider value={{ auth, authRequired, login, logout, completeSignup, updateUsername, getToken }}>
+    <AuthContext.Provider value={{ auth, testMode, blocked, configLoaded, authRequired, login, logout, completeSignup, updateUsername, getToken }}>
       {children}
     </AuthContext.Provider>
   );

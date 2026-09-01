@@ -199,10 +199,10 @@ export default function ToolPanel() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 24, opacity: 0 }}
         transition={{ duration: 0.13, ease: "easeOut" }}
-         className={`shrink-0 bg-card border-t border-border z-20 ${state.tool === "چسباندن تصاویر" ? "max-h-[470px]" : ""}`}
+         className={`shrink-0 bg-card z-20 ${state.tool === "چسباندن تصاویر" ? "border-x border-border" : "border-t border-border"}`}
         dir="rtl"
       >
-        <div className={`px-3 pt-2.5 pb-2 overflow-y-auto ${state.tool === "چسباندن تصاویر" ? "max-h-[470px]" : "max-h-[162px]"}`}>
+        <div className={`px-3 pt-1.5 pb-1.5 overflow-y-auto ${state.tool === "چسباندن تصاویر" ? "max-h-[300px]" : "max-h-[162px]"}`}>
           {state.tool === "چسباندن تصاویر" && <ImageJoiningPanel />}
 
           {/* RESIZE */}

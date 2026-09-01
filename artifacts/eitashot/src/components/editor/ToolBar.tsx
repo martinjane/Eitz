@@ -23,6 +23,7 @@ const QUICK_TOOLS: Tool[] = [
   { id: "خروجی", icon: Download, label: "خروجی" },
 ];
 
+
 const STUDIO_TOOLS: Tool[] = [
   { id: "چسباندن تصاویر", icon: LayoutGrid, label: "چسباندن" },
   { id: "برش", icon: Crop, label: "برش" },
@@ -42,7 +43,7 @@ const STUDIO_TOOLS: Tool[] = [
   { id: "خروجی", icon: Download, label: "خروجی" },
 ];
 
-const STUDIO_EXCLUSIVE = new Set(["لوگو", "واترمارک", "بلور", "کادر", "لایه‌ها"]);
+const STUDIO_EXCLUSIVE = new Set(["چسباندن تصاویر", "لوگو", "واترمارک", "بلور", "کادر", "لایه‌ها"]);
 
 interface ToolBarProps {
   position: "bottom" | "left";

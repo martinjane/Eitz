@@ -9,6 +9,12 @@ import {
   signupLimiter,
   usernameCheckLimiter,
 } from "../lib/rateLimiter";
+import {
+  isTestMode,
+  sendMessage,
+  isAuthDateFresh,
+  registrationMessage,
+} from "../lib/eitaa";
 
 const router = Router();
 /** 30-day session tokens. */
@@ -16,11 +22,11 @@ const SESSION_TTL = "30d";
 /** 10-minute temp token (holds Eitaa profile while user picks a username). */
 const TEMP_TTL = "10m";
 
-// In production, EITAA_BOT_TOKEN is required. Without it the hash check is
-// skipped, meaning anyone can forge initData and log in as any Eitaa user.
-if (!process.env.EITAA_BOT_TOKEN && process.env.NODE_ENV === "production") {
+// In production with TEST_MODE=false, EITAA_BOT_TOKEN is required.
+// Without it the hash check is skipped, meaning anyone can forge initData.
+if (!process.env.EITAA_BOT_TOKEN && process.env.NODE_ENV === "production" && !isTestMode()) {
   throw new Error(
-    "[auth] EITAA_BOT_TOKEN is required in production. " +
+    "[auth] EITAA_BOT_TOKEN is required in production (TEST_MODE=false). " +
     "Set it to your Eitaa bot token before starting the server.",
   );
 }
@@ -100,13 +106,13 @@ router.post("/eitaa", authLoginLimiter, async (req, res) => {
   }
 
   const botToken = process.env.EITAA_BOT_TOKEN;
-  if (botToken) {
+  if (botToken && !isTestMode()) {
     if (!verifyInitData(initData, botToken)) {
       return res.status(401).json({ error: "invalid_hash", message: "بررسی امنیتی داده‌های ورود ناموفق بود" });
     }
   } else {
     // Dev / testing mode — skip hash check but warn loudly
-    console.warn("[auth] EITAA_BOT_TOKEN not set — hash verification skipped (dev mode only)");
+    console.warn("[auth] EITAA_BOT_TOKEN not set or TEST_MODE — hash verification skipped (dev mode only)");
   }
 
   const parsed = parseInitData(initData);
@@ -115,6 +121,17 @@ router.post("/eitaa", authLoginLimiter, async (req, res) => {
   }
 
   const { eitaaId, firstName, lastName, deviceId } = parsed;
+
+  // Auth date freshness check (skip in test mode)
+  if (!isTestMode()) {
+    const authDateStr = new URLSearchParams(initData).get("auth_date");
+    if (!isAuthDateFresh(authDateStr)) {
+      return res.status(401).json({
+        error: "auth_date_stale",
+        message: "لطفاً مجدداً وارد شوید",
+      });
+    }
+  }
 
   // Known user → session token
   const [existing] = await db.select().from(users).where(eq(users.eitaaId, eitaaId)).limit(1);
@@ -223,6 +240,19 @@ router.post("/complete-signup", signupLimiter, async (req, res) => {
     })
     .returning();
 
+  // Send registration welcome message via Eitaa bot (non-blocking, best-effort).
+  // Prevents duplicates via registrationMessageSent flag.
+  sendMessage(eitaaId, registrationMessage(normalizedUsername))
+    .then((sent) => {
+      if (sent && !isTestMode()) {
+        db.update(users)
+          .set({ registrationMessageSent: true, updatedAt: new Date() })
+          .where(eq(users.id, newUser.id))
+          .catch(() => { /* best-effort flag update */ });
+      }
+    })
+    .catch(() => { /* fire-and-forget */ });
+
   const token = jwt.sign({ type: "session", userId: newUser.id, eitaaId }, JWT_SECRET, { expiresIn: SESSION_TTL });
   return res.json({
     status: "ok",
@@ -317,7 +347,9 @@ router.get("/check-username/:username", usernameCheckLimiter, async (req, res) =
  * development so the app can be tested without an Eitaa bot token.
  */
 router.get("/dev-session", async (_req, res) => {
-  if (process.env.NODE_ENV === "production") {
+  // Dev-session is only available in TEST_MODE.
+  // In production (TEST_MODE=false), users must authenticate via Eitaa.
+  if (!isTestMode()) {
     return res.status(404).json({ error: "not_found" });
   }
 

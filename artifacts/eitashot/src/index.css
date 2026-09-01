@@ -342,3 +342,14 @@
     display: none;
   }
 }
+
+@keyframes rollIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}

@@ -6,13 +6,14 @@ import { EitashotLogo } from "@/components/EitashotLogo";
 import {
   ArrowRight, Sparkles, Image as ImageIcon, Trash2, Loader2,
   Upload, Plus, Shield, Check, X, Clock, ChevronDown, ShieldCheck,
-  Pencil, CheckCircle2, XCircle, Megaphone, Ban, DollarSign,
+  Pencil, CheckCircle2, XCircle, Megaphone, Ban, DollarSign, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { listSavedStyles, deleteSavedStyle, type SavedStyleRecord } from "@/lib/savedStylesApi";
 import { listLogos, uploadLogo, deleteLogo, type LogoRecord } from "@/lib/logosApi";
 import { toast } from "@/hooks/use-toast";
 import { ADMIN_USERNAME } from "@/lib/adminConfig";
+import { useAutoReduce } from "@/hooks/useAutoReduce";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SavedAdRecord {
@@ -825,6 +826,16 @@ export default function Settings() {
 
         <div className="mx-4 mt-5 h-px bg-border" />
 
+        {/* ── Image Quality Setting ── */}
+        <div className="px-4 pt-5">
+          <SectionHeader icon={<Zap className="w-4 h-4" />} title="تنظیمات تصویر" />
+          <div className="mt-3 space-y-2">
+            <AutoReduceToggle />
+          </div>
+        </div>
+
+        <div className="mx-4 mt-5 h-px bg-border" />
+
         {/* ── Saved Styles ── */}
         <div className="px-4 pt-5">
           <SectionHeader icon={<Sparkles className="w-4 h-4" />} title="استایل‌های ذخیره‌شده" count={styles.length} cap={5} />
@@ -958,6 +969,29 @@ function ChannelRow({ channel, onCancel, cancelling }: {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Auto-reduce toggle ──────────────────────────────────────────────────────
+function AutoReduceToggle() {
+  const { enabled, toggle } = useAutoReduce();
+  return (
+    <div className="bg-card border border-border rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground">کاهش خودکار کیفیت</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-4">
+          در دستگاه‌های کند، تصاویر بهینه می‌شوند تا ویرایش روان بماند. غیرفعال کردن ممکن است باعث کندی شود.
+        </p>
+      </div>
+      <button
+        onClick={toggle}
+        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${enabled ? "bg-primary" : "bg-muted border border-border"}`}
+        role="switch"
+        aria-checked={enabled}
+      >
+        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? "left-[22px]" : "left-0.5"}`} />
+      </button>
     </div>
   );
 }
