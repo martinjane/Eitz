@@ -3,7 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { globalLimiter } from "./lib/rateLimiter";
+import { globalLimiter, guestLimiter } from "./lib/rateLimiter";
 
 const app: Express = express();
 
@@ -38,6 +38,9 @@ app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", globalLimiter);
+// Strict cap for unauthenticated traffic — guests are UI-blocked anyway, so
+// this exists purely as a server-side safeguard against direct API abuse.
+app.use("/api", guestLimiter);
 app.use("/api", router);
 
 export default app;

@@ -33,41 +33,17 @@ function Router() {
   );
 }
 
-/**
- * Shows a full-screen block when the backend reports blocked=true
- * (TEST_MODE=false and no valid Eitaa session). Non-Eitaa users
- * cannot access or consume any app assets.
- */
-function BlockedScreen() {
-  return (
-    <div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center p-6" dir="rtl">
-      <div className="max-w-sm w-full text-center space-y-4">
-        <div className="text-5xl">🔒</div>
-        <h1 className="text-xl font-bold text-foreground">دسترسی غیرمجاز</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          این برنامه فقط از طریق ایتا قابل دسترسی است.
-          لطفاً از داخل اپلیکیشن ایتا باز کنید.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function AppInner() {
-  const { blocked, configLoaded } = useAuth();
+  const { configLoaded } = useAuth();
 
-  // Before config arrives, show nothing — prevents flash of full app
-  // followed by blocked screen in TEST_MODE=false
+  // Before config arrives, show nothing — prevents a flash of the app
+  // before the backend config response settles.
   if (!configLoaded) {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
       </div>
     );
-  }
-
-  if (blocked) {
-    return <BlockedScreen />;
   }
 
   return (

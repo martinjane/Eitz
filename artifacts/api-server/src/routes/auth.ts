@@ -23,11 +23,12 @@ const SESSION_TTL = "30d";
 const TEMP_TTL = "10m";
 
 // In production with TEST_MODE=false, EITAA_BOT_TOKEN is required.
-// Without it the hash check is skipped, meaning anyone can forge initData.
+// Without it the hash check is skipped, meaning anyone can forge initData
+// and obtain session tokens without coming from the Eitaa app.
 if (!process.env.EITAA_BOT_TOKEN && process.env.NODE_ENV === "production" && !isTestMode()) {
   throw new Error(
     "[auth] EITAA_BOT_TOKEN is required in production (TEST_MODE=false). " +
-    "Set it to your Eitaa bot token before starting the server.",
+    "The app cannot enforce Eitaa-only access without it.",
   );
 }
 
@@ -98,6 +99,12 @@ function parseInitData(initData: string): ParsedInitData | null {
  * Returns:
  *   { status: "ok",               token, user }       — known user, session issued
  *   { status: "needs_username",   tempToken, eitaaUser } — new user, must pick a username
+ *
+ * This is the only session-minting path that survives in production
+ * (TEST_MODE=false). The dev-session endpoint 404s, and complete-signup only
+ * exists to convert a temp token that was itself issued by this endpoint.
+ * So in production, every valid session implies the request came from inside
+ * the Eitaa app.
  */
 router.post("/eitaa", authLoginLimiter, async (req, res) => {
   const { initData } = req.body as { initData?: string };
@@ -105,13 +112,16 @@ router.post("/eitaa", authLoginLimiter, async (req, res) => {
     return res.status(400).json({ error: "initData_required" });
   }
 
+  // Eitaa-only enforcement: the only way to authenticate in production is a
+  // valid Eitaa WebApp initData. If the bot token is missing in production,
+  // the startup guard already refuses to start, so this branch is test mode.
   const botToken = process.env.EITAA_BOT_TOKEN;
   if (botToken && !isTestMode()) {
     if (!verifyInitData(initData, botToken)) {
       return res.status(401).json({ error: "invalid_hash", message: "بررسی امنیتی داده‌های ورود ناموفق بود" });
     }
   } else {
-    // Dev / testing mode — skip hash check but warn loudly
+    // Test mode — skip hash check (dev / local testing only)
     console.warn("[auth] EITAA_BOT_TOKEN not set or TEST_MODE — hash verification skipped (dev mode only)");
   }
 
@@ -166,6 +176,9 @@ router.post("/eitaa", authLoginLimiter, async (req, res) => {
  * Body: { tempToken: string, username: string, tosAccepted: boolean }
  *
  * Validates username, records ToS acceptance, creates the user, returns a session token.
+ *
+ * The tempToken here was issued by POST /auth/eitaa after a successful Eitaa
+ * initData verification, so the completed session is still Eitaa-rooted.
  */
 router.post("/complete-signup", signupLimiter, async (req, res) => {
   const { tempToken, username, tosAccepted } = req.body as {
@@ -272,7 +285,7 @@ router.get("/me", async (req, res) => {
   if (!auth?.startsWith("Bearer ")) {
     return res.status(401).json({ error: "no_token" });
   }
-  let payload: { type: string; userId: number; eitaaId: string };
+  let payload: { type: string; userId: number; eitaaId?: string };
   try {
     payload = jwt.verify(auth.slice(7), JWT_SECRET) as typeof payload;
   } catch {
@@ -340,15 +353,19 @@ router.get("/check-username/:username", usernameCheckLimiter, async (req, res) =
  * GET /api/auth/dev-session
  *
  * Development only — automatically creates and returns a session for the
- * dev_user account (or whatever ADMIN_USERNAME is set to). This endpoint
- * is completely blocked in production (NODE_ENV === "production").
+ * dev_user account (or whatever ADMIN_USERNAME is set to).
+ *
+ * This endpoint is blocked when TEST_MODE=false (production mode). It is
+ * the intended way to sign in without coming from the Eitaa app during local
+ * testing, and it is exactly the mode where non-Eitaa auto-login is allowed.
  *
  * This is the replacement for the Eitaa SDK login flow during local
  * development so the app can be tested without an Eitaa bot token.
  */
 router.get("/dev-session", async (_req, res) => {
-  // Dev-session is only available in TEST_MODE.
-  // In production (TEST_MODE=false), users must authenticate via Eitaa.
+  // Dev-session is only available in test mode. In production
+  // (TEST_MODE=false) this endpoint 404s, so there is no way to sign in
+  // without the Eitaa SDK — which is the desired behavior.
   if (!isTestMode()) {
     return res.status(404).json({ error: "not_found" });
   }

@@ -23,8 +23,29 @@ export interface AuthedRequest extends Request {
 }
 
 /**
+ * Cheap check: does this request carry a cryptographically valid session
+ * token? Used by the guest rate limiter to distinguish real logged-in users
+ * from guests. No DB lookup — requireAuth remains the enforcement authority.
+ */
+export function hasValidSessionToken(req: Request): boolean {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) return false;
+  try {
+    const payload = jwt.verify(auth.slice(7), JWT_SECRET) as { type?: string };
+    return payload.type === "session";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Express middleware — requires a valid `Authorization: Bearer <token>` session
  * token. Attaches `req.userId` on success, otherwise responds 401.
+ *
+ * In production (TEST_MODE=false), every valid session token is backed by a
+ * successful Eitaa WebApp login — that is the only session-minting path that
+ * survives in production — so this middleware also acts as an implicit
+ * "request came from Eitaa" guard.
  */
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   const auth = req.headers.authorization;

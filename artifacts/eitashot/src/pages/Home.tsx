@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Sun, Loader2, Pencil, Sparkles, Megaphone, Send } from "lucide-react";
 import { DonationProgress } from "@/components/DonationProgress";
 import { DonateModal } from "@/components/DonateModal";
+import { LoginRequiredModal } from "@/components/LoginRequiredModal";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
@@ -29,9 +30,10 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { loadImage } = useEditor();
   const { isDark, toggle: toggleTheme } = useTheme();
-  const { auth, login } = useAuth();
+  const { auth, login, testMode } = useAuth();
   const [showChoiceScreen, setShowChoiceScreen] = useState(false);
   const [showDonateModal, setShowDonateModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackSending, setFeedbackSending] = useState(false);
   const { toast } = useToast();
@@ -94,7 +96,19 @@ export default function Home() {
     }
   };
 
+  /**
+   * In normal mode (TEST_MODE=false) a guest must log in with Eitaa before
+   * using the app. Returns true when the action is allowed; otherwise opens
+   * the login modal and returns false.
+   */
+  const requireLogin = (): boolean => {
+    if (testMode || auth.status === "authenticated" || auth.status === "loading") return true;
+    setShowLoginModal(true);
+    return false;
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!requireLogin()) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -145,7 +159,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setLocation("/advertise")}
+            onClick={() => { if (requireLogin()) setLocation("/advertise"); }}
             title="تبلیغات"
             className="h-9 w-9 sm:w-auto sm:px-3 flex items-center justify-center sm:gap-1.5 rounded-xl bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:brightness-110 transition-all"
           >
@@ -189,7 +203,7 @@ export default function Home() {
           <div className="space-y-2.5">
             <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageSelect} />
             <div className="flex items-stretch gap-2">
-              <motion.button whileTap={{ scale: 0.94 }} onClick={() => setLocation("/settings")} title="تنظیمات"
+              <motion.button whileTap={{ scale: 0.94 }} onClick={() => { if (requireLogin()) setLocation("/settings"); }} title="تنظیمات"
                 className="relative w-14 h-14 shrink-0 flex items-center justify-center bg-card border border-border rounded-2xl text-muted-foreground hover:text-foreground active:opacity-80 transition-opacity">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
@@ -199,11 +213,11 @@ export default function Home() {
                   <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-card" />
                 )}
               </motion.button>
-              <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileInputRef.current?.click()}
+              <motion.button whileTap={{ scale: 0.97 }} onClick={() => { if (requireLogin()) fileInputRef.current?.click(); }}
                 className="flex-1 h-14 bg-primary text-white font-bold text-lg rounded-2xl shadow-md active:opacity-90 transition-opacity">
                 انتخاب تصویر
               </motion.button>
-              <motion.button whileTap={{ scale: 0.94 }} onClick={() => setLocation("/guide")} title="راهنما"
+              <motion.button whileTap={{ scale: 0.94 }} onClick={() => { if (requireLogin()) setLocation("/guide"); }} title="راهنما"
                 className="w-14 h-14 shrink-0 flex items-center justify-center bg-card border border-border rounded-2xl text-muted-foreground hover:text-foreground active:opacity-80 transition-opacity">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
@@ -227,7 +241,7 @@ export default function Home() {
               className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
             />
             <button
-              onClick={submitFeedback}
+              onClick={() => { if (requireLogin()) submitFeedback(); }}
               disabled={!feedback.trim() || feedbackSending}
               className="w-full h-9 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
@@ -251,11 +265,11 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">تصویر شما آماده است</p>
               </div>
               <div className="space-y-3">
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setShowChoiceScreen(false); setLocation("/editor"); }}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { if (!requireLogin()) return; setShowChoiceScreen(false); setLocation("/editor"); }}
                   className="w-full h-14 bg-primary text-white font-bold text-base rounded-2xl shadow-md flex items-center justify-center gap-2">
                   <Pencil className="w-4 h-4" /> ویرایش تصویر
                 </motion.button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setShowChoiceScreen(false); setLocation("/saved-styles"); }}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { if (!requireLogin()) return; setShowChoiceScreen(false); setLocation("/saved-styles"); }}
                   className="w-full h-14 bg-accent text-accent-foreground font-bold text-base rounded-2xl shadow-md flex items-center justify-center gap-2">
                   <Sparkles className="w-4 h-4" /> استفاده از استایل ذخیره‌شده
                 </motion.button>
@@ -267,6 +281,7 @@ export default function Home() {
       </AnimatePresence>
 
       <DonateModal open={showDonateModal} onClose={() => setShowDonateModal(false)} />
+      <LoginRequiredModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 }

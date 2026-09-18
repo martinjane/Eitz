@@ -313,7 +313,7 @@ export default function Editor() {
           </motion.div>
         )}
       </AnimatePresence>
-      <LoginRequiredModal open={showLoginModal} onClose={() => { setShowLoginModal(false); if (!state.sourceImage) setLocation("/"); }} />
+      <LoginRequiredModal open={showLoginModal} onClose={() => { setShowLoginModal(false); if (auth.status === "guest" && !testMode) { setState(s => ({ ...s, sourceImage: null })); setLocation("/"); } else if (!state.sourceImage) setLocation("/"); }} />
     </div>
   );
 }

@@ -75,11 +75,11 @@ export function EitashotLogo({ size = 40 }: { size?: number }) {
         fillOpacity="0.97"
       />
 
-      {/* Spark A — top-left */}
+      {/* Spark A — top-left (equilateral triangle with B and C, side ≈ 6) */}
       <g filter={`url(#${filterId})`}>
         <path
           className="s1"
-          d="M29,6 C29.2,7.1 30,7.9 31.1,8.1 C30,8.3 29.2,9.1 29,10.2 C28.8,9.1 28,8.3 26.9,8.1 C28,7.9 28.8,7.1 29,6Z"
+          d="M28,6.5 C28.2,7.6 29,8.4 30.1,8.6 C29,8.8 28.2,9.6 28,10.7 C27.8,9.6 27,8.8 25.9,8.6 C27,8.4 27.8,7.6 28,6.5Z"
           fill="white"
         />
       </g>
@@ -87,11 +87,11 @@ export function EitashotLogo({ size = 40 }: { size?: number }) {
       <g filter={`url(#${filterId})`}>
         <path
           className="s2"
-          d="M33.5,6 C33.7,7.1 34.5,7.9 35.6,8.1 C34.5,8.3 33.7,9.1 33.5,10.2 C33.3,9.1 32.5,8.3 31.4,8.1 C32.5,7.9 33.3,7.1 33.5,6Z"
+          d="M34,6.5 C34.2,7.6 35,8.4 36.1,8.6 C35,8.8 34.2,9.6 34,10.7 C33.8,9.6 33,8.8 31.9,8.6 C33,8.4 33.8,7.6 34,6.5Z"
           fill="white"
         />
       </g>
-      {/* Spark C — below */}
+      {/* Spark C — bottom apex, fixed */}
       <g filter={`url(#${filterId})`}>
         <path
           className="s3"

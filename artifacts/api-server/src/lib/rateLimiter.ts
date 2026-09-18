@@ -8,6 +8,7 @@
 
 import rateLimit from "express-rate-limit";
 import { ipKeyGenerator } from "express-rate-limit";
+import { hasValidSessionToken } from "./auth";
 
 /** 429 response body used across all limiters. */
 function handler429(res: import("express").Response, message: string) {
@@ -143,6 +144,36 @@ export const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => handler429(res, "تعداد درخواست‌ها زیاد است. لطفاً کمی صبر کنید."),
+});
+
+/**
+ * Guest limiter — brutally strict. Applies only to requests WITHOUT a valid
+ * session token (forged/expired tokens fail verification and count as guest
+ * traffic, so it cannot be bypassed by fake auth headers).
+ *
+ * Guests have no legitimate reason to hammer the API: the app blocks them at
+ * the UI level, and real authenticated traffic is unaffected. Auth-flow
+ * endpoints (/api/auth/*) are exempt — logging in is the intended way out.
+ *
+ * Applied to the entire /api prefix in app.ts, before the route router.
+ */
+export const guestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `guest:${ipKeyGenerator(req.ip ?? "")}`,
+  skip: (req) => {
+    // Auth endpoints keep their own dedicated limiters — a guest must always
+    // be able to reach the login flow.
+    if (req.path.startsWith("/auth/")) return true;
+    // Health check must stay reachable for uptime probes.
+    if (req.path === "/healthz") return true;
+    // Any request with a valid session token is NOT guest traffic.
+    if (hasValidSessionToken(req)) return true;
+    return false;
+  },
+  handler: (_req, res) => handler429(res, "برای استفاده از ایتاشات ابتدا وارد شوید."),
 });
 
 /**

@@ -8,6 +8,10 @@ import React, {
 } from "react";
 
 // ── Eitaa SDK global types ────────────────────────────────────────────────────
+// The Eitaa mini-app SDK is only available when the app is opened inside the
+// Eitaa messenger app. Its presence (window.Eitaa?.WebApp) is what tells us
+// the visitor came from Eitaa; the backend enforces the same rule via
+// initData verification on /api/auth/eitaa.
 export interface EitaaWebApp {
   ready(): void;
   expand(): void;
@@ -57,9 +61,28 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
   }
 }
 
-// ── API helpers ───────────────────────────────────────────────────────────────
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+// ── Token helpers ────────────────────────────────────────────────────────────
 const TOKEN_KEY = "eitashot_token";
+
+/**
+ * True when the stored token was minted by the dev-session endpoint
+ * (its payload carries the fake "dev_…" Eitaa ID). Decodes the JWT payload
+ * client-side — purely a cleanup heuristic; the server remains the authority.
+ */
+function isDevToken(token: string): boolean {
+  try {
+    const b64 = token.split(".")[1];
+    if (!b64) return false;
+    const normalized = b64.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(normalized + "=".repeat((4 - (normalized.length % 4)) % 4));
+    const claims = JSON.parse(json) as { eitaaId?: string };
+    return typeof claims.eitaaId === "string" && claims.eitaaId.startsWith("dev_");
+  } catch {
+    return false;
+  }
+}
+
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 async function apiFetch(
   path: string,
@@ -102,7 +125,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, dispatch] = useReducer(reducer, { status: "loading" });
   const [authRequired] = React.useState(false);
-  const [testMode, setTestMode] = React.useState(true); // default true = safe dev default
+  // Normal mode is the default — test mode is an explicit opt-in from the
+  // backend config. Until /api/config answers, the app behaves normally.
+  const [testMode, setTestMode] = React.useState(false);
   const [blocked, setBlocked] = React.useState(false);
   const [configLoaded, setConfigLoaded] = React.useState(false);
   const didInit = useRef(false);
@@ -145,28 +170,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   }, []);
 
-  // On mount: fetch config → restore session → dev-session → Eitaa SDK → guest
+  // On mount: fetch config → restore session → dev-session (test mode only) → Eitaa SDK → guest
   useEffect(() => {
     if (didInit.current) return; // StrictMode guard
     didInit.current = true;
 
     (async () => {
-      // 0. Fetch backend config to determine testMode (fire-and-forget for UI gating).
-      //    We do NOT gate auth decisions on this — the backend already enforces
-      //    testMode on /dev-session, so we always attempt it and let the server decide.
-      fetch(`${API_BASE}/api/config`)
-        .then(r => r.ok ? r.json() : null)
-        .then(cfg => {
-          if (!cfg) return;
-          if (typeof cfg.testMode === "boolean") setTestMode(cfg.testMode);
-          if (typeof cfg.blocked === "boolean") setBlocked(cfg.blocked);
-        })
-        .catch(() => { /* silent */ })
-        .finally(() => setConfigLoaded(true));
+      // 0. Fetch backend config first. testMode decides whether a dev-session
+      //    auto-login is attempted at all: with TEST_MODE=false the app never
+      //    asks for a dev session — only the Eitaa login can sign in.
+      const cfg = await fetch(`${API_BASE}/api/config`)
+        .then(r => (r.ok ? (r.json() as { testMode?: boolean; blocked?: boolean } | null) : null))
+        .catch(() => null);
+      if (cfg) {
+        if (typeof cfg.testMode === "boolean") setTestMode(cfg.testMode);
+        if (typeof cfg.blocked === "boolean") setBlocked(cfg.blocked);
+      }
+      setConfigLoaded(true);
 
-      // 1. Try existing session token
+      // 1. Try existing session token.
+      //    In production (TEST_MODE=false) a token minted by the dev endpoint is
+      //    not a valid login — only Eitaa logins count — so discard it and let
+      //    the Eitaa SDK / guest flow proceed.
       const stored = localStorage.getItem(TOKEN_KEY);
-      if (stored) {
+      if (stored && cfg?.testMode === false && isDevToken(stored)) {
+        localStorage.removeItem(TOKEN_KEY);
+      } else if (stored) {
         try {
           const res = await apiFetch("/me", { method: "GET" }, stored);
           if (res.ok) {
@@ -178,20 +207,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem(TOKEN_KEY); // expired / invalid
       }
 
-      // 2. Dev-session auto-login.
-      //    The backend gates this on isTestMode(): when TEST_MODE=false it returns
-      //    404, so this is always safe to attempt regardless of frontend state.
-      try {
-        const res = await apiFetch("/dev-session", { method: "GET" });
-        if (res.ok) {
-          const data = await res.json() as { status?: string; token?: string; user?: AppUser };
-          if (data.status === "ok" && data.token && data.user) {
-            localStorage.setItem(TOKEN_KEY, data.token);
-            dispatch({ type: "AUTHENTICATED", user: data.user, token: data.token });
-            return;
+      // 2. Dev-session auto-login — test mode only. In production the app
+      //    never even sends this request (the backend would 404 it anyway).
+      if (cfg?.testMode === true) {
+        try {
+          const res = await apiFetch("/dev-session", { method: "GET" });
+          if (res.ok) {
+            const data = await res.json() as { status?: string; token?: string; user?: AppUser };
+            if (data.status === "ok" && data.token && data.user) {
+              localStorage.setItem(TOKEN_KEY, data.token);
+              dispatch({ type: "AUTHENTICATED", user: data.user, token: data.token });
+              return;
+            }
           }
-        }
-      } catch { /* network error — fall through to Eitaa SDK */ }
+        } catch { /* network error — fall through to Eitaa SDK */ }
+      }
 
       // 3. Auto-login via Eitaa SDK (works when opened inside Eitaa app)
       const sdkOk = await attemptEitaaLogin();

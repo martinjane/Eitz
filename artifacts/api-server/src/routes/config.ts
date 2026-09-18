@@ -12,15 +12,16 @@ const router = Router();
  * Minimal bootstrap config the frontend reads on load.
  * - `authRequired` is a backend-only switch (AUTH_REQUIRED env var)
  * - `testMode` tells the frontend whether Eitaa SDK features should be used
- * - `blocked` — when testMode=false, this is true unless the request carries a
- *   valid session token. The frontend uses this to refuse rendering entirely
- *   so non-Eitaa users cannot access or consume any app assets.
+ * - `blocked` — in production (TEST_MODE=false), this is true unless the
+ *   request carries a valid session token. The only way to obtain such a token
+ *   in production is a successful Eitaa WebApp login, so non-Eitaa visitors
+ *   are blocked from loading any app assets.
  */
 router.get("/", async (req, res) => {
   let blocked = false;
 
   if (!isTestMode()) {
-    // In production (TEST_MODE=false), check for a valid session token.
+    // Production: only Eitaa-authenticated sessions may load the app.
     const auth = req.headers.authorization;
     if (!auth?.startsWith("Bearer ")) {
       blocked = true;

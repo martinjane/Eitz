@@ -27,12 +27,14 @@ pnpm --filter @workspace/db run push
 
 ## Test Mode
 
-The app uses a `TEST_MODE` environment variable to switch between development and production behavior:
+The app uses a `TEST_MODE` environment variable to switch between normal (default) and test behavior:
 
 | `TEST_MODE` | Behavior |
 |---|---|
-| `true` (or absent) | Dev session auto-login, Eitaa auth optional, bot messaging skipped |
-| `false` | Eitaa `initData` required, HMAC-SHA256 verified, non-Eitaa users blocked |
+| `false` (or absent) | Normal mode: no dev session, Eitaa auth for login, guests see a login prompt |
+| `true` | Test mode (explicit opt-in): dev session auto-login, Eitaa auth optional, bot messaging skipped |
+
+When `TEST_MODE=true` (testing) the dev-session endpoint is enabled. For local testing, set `TEST_MODE=true` in your environment.
 
 When `TEST_MODE=false`, the following environment variables are required:
 

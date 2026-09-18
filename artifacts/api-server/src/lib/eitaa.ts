@@ -5,15 +5,25 @@
  * All messaging is gated behind the TEST_MODE flag:
  *   - TEST_MODE=true  → messaging is a no-op (no bot token required)
  *   - TEST_MODE=false → bot token required, messages sent via Eitaa API
+ *
+ * Note: in production (TEST_MODE=false) the bot token is also what lets the
+ * app enforce Eitaa-only access — `POST /auth/eitaa` verifies the incoming
+ * WebApp initData against the bot token, so only requests that genuinely came
+ * from inside the Eitaa app can obtain a session.
  */
 
 import { logger } from "./logger";
 
-// ── TEST_MODE ────────────────────────────────────────────────────────────────
+// ── TEST_MODE ──────────────────────────────────────────────────────────────
 
-/** Returns true when the app is in development/test mode (no Eitaa enforcement). */
+/**
+ * Normal mode is the default: TEST_MODE=false (or unset) means the app runs
+ * normally — no dev session, Eitaa login required for authentication.
+ * Test mode is an explicit opt-in: TEST_MODE=true enables the dev-session
+ * auto-login, skips hash verification and bot messaging.
+ */
 export function isTestMode(): boolean {
-  return process.env.TEST_MODE !== "false";
+  return process.env.TEST_MODE === "true";
 }
 
 // ── Eitaa Bot API ────────────────────────────────────────────────────────────
