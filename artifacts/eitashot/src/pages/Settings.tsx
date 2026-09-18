@@ -50,16 +50,31 @@ interface ChannelRecord {
 }
 
 // ── Image compression helper ──────────────────────────────────────────────────
-async function compressImage(dataUrl: string, maxBytes: number): Promise<string> {
+// When square=true the image is center-cropped to 1:1 before compression, so ad
+// icons are shown in full inside the square display blocks (object-cover) —
+// only the rounded corners can clip, nothing else.
+async function compressImage(dataUrl: string, maxBytes: number, square = false): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve(dataUrl); return; }
-      ctx.drawImage(img, 0, 0);
+      if (square) {
+        // Center-crop to square
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        canvas.width = side;
+        canvas.height = side;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, side, side);
+      } else {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0);
+      }
       let quality = 0.92;
       const tryCompress = () => {
         const result = canvas.toDataURL("image/jpeg", quality);
@@ -319,7 +334,7 @@ export default function Settings() {
       try {
         const raw = ev.target?.result;
         if (typeof raw !== "string") throw new Error("image_read_failed");
-        const compressed = await compressImage(raw, 500 * 1024);
+        const compressed = await compressImage(raw, 500 * 1024, true);
         setAdFormImage(compressed);
       } catch {
         toast({ title: "پردازش تصویر انجام نشد", description: "لطفاً تصویر دیگری انتخاب کنید", variant: "destructive" });

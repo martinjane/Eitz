@@ -15,6 +15,7 @@ import Guide from "@/pages/Guide";
 import SavedStyles from "@/pages/SavedStyles";
 import AdvertisePage from "@/pages/AdvertisePage";
 import AdminPage from "@/pages/AdminPage";
+import TermsOfService from "@/pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/guide" component={Guide} />
       <Route path="/saved-styles" component={SavedStyles} />
       <Route path="/advertise" component={AdvertisePage} />
+      <Route path="/terms" component={TermsOfService} />
       <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>

@@ -252,6 +252,19 @@ export default function Home() {
         </motion.div>
       </div>
 
+      {/* ── Footer — ToS link + copyright ── */}
+      <footer className="px-6 pb-6 pt-2 text-center space-y-1.5">
+        <button
+          onClick={() => setLocation("/terms")}
+          className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+        >
+          قوانین و مقررات
+        </button>
+        <p className="text-[11px] text-muted-foreground/80" dir="ltr">
+          © {new Date().getFullYear()} Eitashot.ir — All rights reserved.
+        </p>
+      </footer>
+
       {/* Post-select choice overlay */}
       <AnimatePresence>
         {showChoiceScreen && (

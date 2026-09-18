@@ -47,7 +47,7 @@ export function RolePickerModal() {
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
           dir="rtl"
-          onClick={(e) => { if (e.target === e.currentTarget) setVisible(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) { localStorage.setItem(ROLE_KEY, ""); setVisible(false); } }}
         >
           <motion.div
             initial={{ y: 80, opacity: 0 }}
@@ -99,13 +99,6 @@ export function RolePickerModal() {
                 </div>
               </button>
             </div>
-
-            <button
-              onClick={() => setVisible(false)}
-              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
-              بعداً تصمیم می‌گیرم
-            </button>
           </motion.div>
         </motion.div>
       )}
